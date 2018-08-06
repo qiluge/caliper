@@ -1,0 +1,35 @@
+{
+  "blockchain": {
+    "type": "ontology",
+    "config": "benchmark/ontology/ontology.json"
+  },
+  "command" : {
+    "start": "rm -rf Chain/ Log/ & ./ontology --testmode --networkid 3 --gaslimit 0 --gasprice 0 --rest --localrpc",
+    "end" : "pkill -9 ontology"
+  },
+  "test": {
+    "name": "ontology test",
+    "description" : "This is ontology tps test!",
+    "clients": {
+      "type": "local",
+      "number": 1
+    },
+    "rounds": [{
+        "label" : "transfer",
+        "txNumber" : [50000],
+        "rateControl" : [{"type": "fixed-rate", "opts": {"tps" : 5000}}],
+        "callback" : "benchmark/ontology/transfer.js"
+      }]
+  },
+  "monitor": {
+    "type": ["process"],
+    "process": [
+      {
+        "command" : "ontology",
+        "arguments" : "--testmode --networkid 3 --gaslimit 0 --gasprice 0 --rest --localrpc",
+        "multiOutput" : "avg"
+      }
+    ],
+    "interval": 1
+  }
+}

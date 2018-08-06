@@ -38,6 +38,11 @@ class Blockchain {
             this.bcType = 'composer';
             this.bcObj = new composer(configPath);
         }
+        else if(config.hasOwnProperty('ontology')){
+            let ontology = require('../ontology/ontology');
+            this.bcType = 'ontology';
+            this.bcObj = new ontology(configPath);
+        }
         else {
             this.bcType = 'unknown';
             throw new Error('Unknown blockchain config file ' + configPath);
@@ -48,7 +53,7 @@ class Blockchain {
      * return the blockchain's type
      * @return {string} type of the blockchain
      */
-    gettype() {
+    getType() {
         return this.bcType;
     }
 

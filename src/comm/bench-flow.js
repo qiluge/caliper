@@ -36,7 +36,7 @@ let absCaliperDir = path.join(__dirname, '..', '..');
 function createReport() {
     let config = require(absConfigFile);
     report  = new Report();
-    report.addMetadata('DLT', blockchain.gettype());
+    report.addMetadata('DLT', blockchain.getType());
     try{
         report.addMetadata('Benchmark', config.test.name);
     }

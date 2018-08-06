@@ -379,7 +379,7 @@ class Monitor {
 
 
     /**
-    * Get last values of specific historical data
+    * Get last(latest) values of specific historical data
     * @param {Array} items names of the lookup items
     * @param {Number} idx index of the lookup object
     * @return {Array} normalized string values
