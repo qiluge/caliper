@@ -27,3 +27,10 @@ zookeeper.out
 
 # Ignore IDE files
 .vscode/*
+
+transfer.txt
+ontology
+wallet.dat
+nohup.out
+Chain/
+Log/

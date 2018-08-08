@@ -4,8 +4,8 @@
     "config": "benchmark/ontology/ontology.json"
   },
   "command" : {
-    "start": "rm -rf Chain/ Log/ & ./ontology --testmode --networkid 3 --gaslimit 0 --gasprice 0 --rest --localrpc",
-    "end" : "pkill -9 ontology"
+    "start": "nohup ./start.sh &",
+    "end" : "pkill -9 ontology & rm -rf Chain Log"
   },
   "test": {
     "name": "ontology test",
@@ -16,8 +16,8 @@
     },
     "rounds": [{
         "label" : "transfer",
-        "txNumber" : [50000],
-        "rateControl" : [{"type": "fixed-rate", "opts": {"tps" : 5000}}],
+        "txNumber" : [500],
+        "rateControl" : [{"type": "fixed-rate", "opts": {"tps" : 50}}],
         "callback" : "benchmark/ontology/transfer.js"
       }]
   },
@@ -25,8 +25,8 @@
     "type": ["process"],
     "process": [
       {
-        "command" : "ontology",
-        "arguments" : "--testmode --networkid 3 --gaslimit 0 --gasprice 0 --rest --localrpc",
+        "command" : "./ontology",
+        "arguments" : "--testmode,--networkid,3,--gaslimit,0,--gasprice,0,--rest,--localrpc",
         "multiOutput" : "avg"
       }
     ],

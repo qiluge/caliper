@@ -12,6 +12,7 @@ const bc   = require('../blockchain.js');
 const RateControl = require('../rate-control/rateControl.js');
 const Util = require('../util.js');
 const log  = Util.log;
+const childProcess = require('child_process');
 
 let blockchain;
 let results      = [];
@@ -141,6 +142,7 @@ async function runFixedNumber(msg, cb, context) {
             return Promise.resolve();
         }));
         await rateControl.applyRateControl(startTime, txNum, results);
+        txNum++;
     }
 
     await Promise.all(promises);

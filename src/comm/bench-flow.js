@@ -292,8 +292,9 @@ module.exports.run = function(configFile, networkFile) {
                     }
                     return resolve();
                 });
-                child.stdout.pipe(process.stdout);
+                // child.stdout.pipe(process.stdout);
                 child.stderr.pipe(process.stderr);
+                return resolve();
             }
             else {
                 resolve();
