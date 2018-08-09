@@ -294,7 +294,10 @@ module.exports.run = function(configFile, networkFile) {
                 });
                 // child.stdout.pipe(process.stdout);
                 child.stderr.pipe(process.stderr);
-                return resolve();
+                log('wait 5 seconds for ontology start...');
+                return Util.sleep(5000).then(() => {
+                    return resolve();
+                });
             }
             else {
                 resolve();

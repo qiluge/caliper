@@ -4,8 +4,8 @@
     "config": "benchmark/ontology/ontology.json"
   },
   "command" : {
-    "start": "nohup ./start.sh &",
-    "end" : "pkill -9 ontology & rm -rf Chain Log"
+    "start": "./start.sh",
+    "end" : "pkill -9 ontology"
   },
   "test": {
     "name": "ontology test",

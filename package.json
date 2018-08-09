@@ -20,6 +20,7 @@
   "engine-strict": true,
   "engineStrict": true,
   "dependencies": {
+    "axios": "^0.18.0",
     "cbor": "^3.0.3",
     "commander": "^2.11.0",
     "dockerode": "^2.5.0",

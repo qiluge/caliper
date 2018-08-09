@@ -1,34 +1,13 @@
 'use strict';
-// const req = require('request');
-const ps = require('ps-node');
-
+const axios = require('axios');
 /**
 *   test
 */
 function main(){
-    // ps.lookup({ command: './ontology',
-    //     arguments: '--testmode --networkid 3 --gaslimit 0 --gasprice 0 --rest --localrpc'}, (err, resultList) => {
-    //     if (err) {
-    //         console.log('failed looking the process up: ' + err);
-    //     }
-    //     else {
-    //         for(let i = 0 ; i < resultList.length ; i++) {
-    //             console.log('findprocs pid is ', resultList[i].pid);
-    //         }
-    //     }
-    // });
-    ps.lookup({ command: 'ontology',arguments: '--testmode,--networkid,3,--gaslimit,0,--gasprice,0,--rest,--localrpc'
-    }, function(err, resultList ) {
-        if (err) {
-            throw new Error( err );
-        }
-
-        resultList.forEach(function( process ){
-            if( process ){
-
-                console.log( 'PID: %s, COMMAND: %s, ARGUMENTS: %s', process.pid, process.command, process.arguments );
-            }
-        });
+    axios.post('http://localhost:20334/api/v1/transaction', {
+        'Action': 'sendrawtransaction',
+        'Version': '1.0.0',
+        'Data': '00d1441f00000000000000000000a086010000000000a766c0f13f96578b70d57c9802515ba406d369977100c66b14a766c0f13f96578b70d57c9802515ba406d369976a7cc814ede21471b49ed5ed127b4ab834237d982c78e9336a7cc8516a7cc86c51c1087472616e736665721400000000000000000000000000000000000000010068164f6e746f6c6f67792e4e61746976652e496e766f6b650001414028b3394911d5f75cd4a99b350363f421c5d1349ff138ea36afd425d3992309516233792cd74c8cf9756d4243fa2098abdd6b7d35858286854af77390f306ed1523210361916e13a7a463db9592919462c34d70835353a6e2747dccd65a68927465d5edac'
     });
 }
 

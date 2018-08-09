@@ -1,7 +1,7 @@
 'use strict';
 
 const BlockchainInterface = require('../comm/blockchain-interface.js');
-const req = require('request');
+const axios = require('axios');
 const TxStatus  = require('../comm/transaction');
 
 /**
@@ -65,7 +65,7 @@ class Ontology extends BlockchainInterface{
         let txId;
         args.forEach((item, index)=>{
             if (item.hasOwnProperty('txData')){
-                data = {'Data':item.txData};
+                data = item.txData;
             }
             if (item.hasOwnProperty('txHash')){
                 txId = item.txHash;
@@ -73,7 +73,11 @@ class Ontology extends BlockchainInterface{
         });
         let invokeStatus = new TxStatus(txId);
         invokeStatus.SetStatusSuccess();
-        req.post({url:'http://localhost:20334/api/v1/transaction', formData:data});
+        axios.post('http://localhost:20334/api/v1/transaction', {
+            'Action': 'sendrawtransaction',
+            'Version': '1.0.0',
+            'Data': data
+        });
         return Promise.resolve(invokeStatus);
     }
 }
