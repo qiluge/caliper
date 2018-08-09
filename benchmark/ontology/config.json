@@ -5,7 +5,7 @@
   },
   "command" : {
     "start": "./start.sh",
-    "end" : "pkill -9 ontology"
+    "end" : "pkill -9 ontology & rm -rf Chain Log"
   },
   "test": {
     "name": "ontology test",
@@ -17,7 +17,7 @@
     "rounds": [{
         "label" : "transfer",
         "txNumber" : [500],
-        "rateControl" : [{"type": "fixed-rate", "opts": {"tps" : 50}}],
+        "rateControl" : [{"type": "fixed-rate", "opts": {"tps" : 250}}],
         "callback" : "benchmark/ontology/transfer.js"
       }]
   },

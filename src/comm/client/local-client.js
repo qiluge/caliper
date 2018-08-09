@@ -12,7 +12,7 @@ const bc   = require('../blockchain.js');
 const RateControl = require('../rate-control/rateControl.js');
 const Util = require('../util.js');
 const log  = Util.log;
-const childProcess = require('child_process');
+const Ontology = require('../../ontology/ontology.js');
 
 let blockchain;
 let results      = [];
@@ -23,6 +23,8 @@ let txUpdateTime = 1000;
 let trimType = 0;
 let trim = 0;
 let startTime = 0;
+
+let endNum = 0;
 
 /**
  * Calculate realtime transaction statistics and send the txUpdated message
@@ -137,15 +139,29 @@ async function runFixedNumber(msg, cb, context) {
 
     let promises = [];
     while(txNum < msg.numb) {
-        promises.push(cb.run().then((result) => {
-            addResult(result);
-            return Promise.resolve();
-        }));
+        promises.push(cb.run());
         await rateControl.applyRateControl(startTime, txNum, results);
         txNum++;
     }
 
-    await Promise.all(promises);
+    // wait all tx processed
+    if (blockchain.bcObj.hasOwnProperty('handledWholeTx')) {
+        await blockchain.bcObj.insureWholeTxHandled();
+    }
+    await Promise.all(promises).then((result) => {
+        result.forEach(function (item) {
+            if (item.GetStatus() !== 'failed' && blockchain.bcObj instanceof Ontology){// tx has not been confirmed yet
+                // query tx state
+                if (blockchain.bcObj.insureTx(item.GetID())){
+                    item.SetStatusSuccess();
+                }else{
+                    item.SetStatusFail();
+                }
+            }
+            addResult(item);
+            log('%d is end', ++endNum);
+        });
+    });
     await rateControl.end();
     return await blockchain.releaseContext(context);
 }

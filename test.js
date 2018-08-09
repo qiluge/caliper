@@ -1,14 +1,26 @@
 'use strict';
-const axios = require('axios');
+
+const NetUtils = require('./src/ontology/net_util');
+const Util = require('./src/comm/util.js');
+
+
 /**
-*   test
-*/
-function main(){
-    axios.post('http://localhost:20334/api/v1/transaction', {
-        'Action': 'sendrawtransaction',
-        'Version': '1.0.0',
-        'Data': '00d1441f00000000000000000000a086010000000000a766c0f13f96578b70d57c9802515ba406d369977100c66b14a766c0f13f96578b70d57c9802515ba406d369976a7cc814ede21471b49ed5ed127b4ab834237d982c78e9336a7cc8516a7cc86c51c1087472616e736665721400000000000000000000000000000000000000010068164f6e746f6c6f67792e4e61746976652e496e766f6b650001414028b3394911d5f75cd4a99b350363f421c5d1349ff138ea36afd425d3992309516233792cd74c8cf9756d4243fa2098abdd6b7d35858286854af77390f306ed1523210361916e13a7a463db9592919462c34d70835353a6e2747dccd65a68927465d5edac'
-    });
+ *   test
+ */
+async function main(){
+    let newHeight = 0;
+    let i = 0;
+    while (i < 3){
+        await Util.sleep(6000).then(() => {
+        });
+        // await NetUtils.getHeight().then((height) =>{
+        //     newHeight = height;
+        // });
+        newHeight = await NetUtils.getHeight();
+        console.log(newHeight);
+        i++;
+    }
+    // console.log(await NetUtils.getHeight().then());
 }
 
 main();
