@@ -30,6 +30,7 @@ zookeeper.out
 
 transfer.txt
 ontology
+!*/ontology/
 wallet.dat
 nohup.out
 Chain/

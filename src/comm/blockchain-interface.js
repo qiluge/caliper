@@ -113,6 +113,13 @@ class BlockchainInterface {
     }
 
     /**
+     * wait a block generate
+     */
+    waitABlock(){
+        this.bcObj.waitABlock();
+    }
+
+    /**
      * Query state from the ledger
      * @param {Object} context context object from getContext
      * @param {String} contractID identiy of the contract

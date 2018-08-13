@@ -1,5 +1,18 @@
 {
   "ontology": {
-
+    "wallet":"wallet.dat",
+    "password":"passwordtest",
+    "contract" :[
+      {
+        "name":"hello",
+        "version":"1.0.0",
+        "description":"test contract",
+        "author":"tester",
+        "email":"tester@tester.com",
+        "needStorage":true,
+        "path":"benchmark/ontology/hello.avm",
+        "abi":"benchmark/ontology/hello.abi"
+      }
+    ]
   }
 }

@@ -1,0 +1,1 @@
+{"hash":"0x613e3ad54dcb30e38bbcd52d78457b95175ad278","entrypoint":"Main","functions":[{"name":"Main","parameters":[{"name":"operation","type":"String"},{"name":"args","type":"Array"}],"returntype":"Any"},{"name":"Hello","parameters":[{"name":"msg","type":"String"}],"returntype":"Void"}],"events":[]}
