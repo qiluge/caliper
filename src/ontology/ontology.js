@@ -85,31 +85,20 @@ class Ontology extends BlockchainInterface{
     }
 
     /**
-     * If three sequential empty block has been generated, it can be considered that whole tx has been processed.
+     * get current height
+     * @return {int} current height
      */
-    async insureWholeTxHandled(){
-        if (this.handledWholeTx) {
-            return;
-        }
-        let emptyBlocNum = 0;
-        let currentHeight = 0;
-        // tx is handling
-        while(emptyBlocNum < 3){
-            let newHeight = 0;
-            let txNum = 0;
-            await Util.sleep(6000).then(() => {
-            });
-            newHeight = await NetUtil.getHeight();
-            txNum = await NetUtil.getTxNumOfHeight(newHeight);
-            if (txNum === 0 && newHeight > currentHeight) {
-                emptyBlocNum++;
-            } else {
-                emptyBlocNum = 0;
-            }
-            currentHeight = newHeight;
-            log('current height is %d, numtx = %d, empty bolck num is %d.', currentHeight, txNum, emptyBlocNum);
-        }
-        this.handledWholeTx = true;
+    async getHeight(){
+        return await NetUtil.getHeight();
+    }
+
+    /**
+     * get current height
+     * @param {int} height block height
+     * @return {string[]} all tx hashes in the block
+     */
+    async getBlockTxHashes(height){
+        return await NetUtil.getTxNumOfHeight(height);
     }
 
     /**

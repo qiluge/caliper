@@ -1,30 +1,28 @@
 /**
-* Copyright 2017 HUAWEI. All Rights Reserved.
-*
-* SPDX-License-Identifier: Apache-2.0
-*
-*/
+ * Copyright 2017 HUAWEI. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ */
 
 'use strict';
 
 // global variables
-const bc   = require('../blockchain.js');
+const bc = require('../blockchain.js');
 const RateControl = require('../rate-control/rateControl.js');
 const Util = require('../util.js');
-const log  = Util.log;
+const log = Util.log;
 const Ontology = require('../../ontology/ontology.js');
 
 let blockchain;
-let results      = [];
-let txNum        = 0;
-let txLastNum    = 0;
-let resultStats  = [];
+let results = [];
+let txNum = 0;
+let txLastNum = 0;
+let resultStats = [];
 let txUpdateTime = 1000;
 let trimType = 0;
 let trim = 0;
 let startTime = 0;
-
-let endNum = 0;
 
 /**
  * Calculate realtime transaction statistics and send the txUpdated message
@@ -36,12 +34,12 @@ function txUpdate() {
 
     let newResults = results.slice(0);
     results = [];
-    if(newResults.length === 0 && newNum === 0) {
+    if (newResults.length === 0 && newNum === 0) {
         return;
     }
 
     let newStats;
-    if(newResults.length === 0) {
+    if (newResults.length === 0) {
         newStats = bc.createNullDefaultTxStats();
     }
     else {
@@ -81,8 +79,8 @@ function txUpdate() {
  * @param {Object} result test result, should be an array or a single JSON object
  */
 function addResult(result) {
-    if(Array.isArray(result)) { // contain multiple results
-        for(let i = 0 ; i < result.length ; i++) {
+    if (Array.isArray(result)) { // contain multiple results
+        for (let i = 0; i < result.length; i++) {
             results.push(result[i]);
         }
     }
@@ -96,7 +94,7 @@ function addResult(result) {
  * @param {JSON} msg start test message
  */
 function beforeTest(msg) {
-    results  = [];
+    results = [];
     resultStats = [];
     txNum = 0;
     txLastNum = 0;
@@ -123,6 +121,41 @@ function submitCallback(count) {
 }
 
 /**
+ * If three sequential empty block has been generated, it can be considered that whole tx has been processed.
+ * @param{TxStatus[]} notsureTxStatus unconfirmed transactions
+ */
+async function insureTxs(notsureTxStatus) {
+    // first, record current height of block chain, and try to confirm all notsure txs
+    let currentHeight = blockchain.getHeight();
+    let emptyBlockNum = 0;
+    while (notsureTxStatus.length > 0 && emptyBlockNum <= 2 ) {
+        for (let i = 0; i < notsureTxStatus.length; i++) {
+            if (blockchain.insureTx(notsureTxStatus[i].GetID())) {
+                notsureTxStatus[i].SetStatusSuccess();
+                addResult(notsureTxStatus[i]);
+                notsureTxStatus.splice(i, 1);
+                i--;
+            }
+        }
+        if (notsureTxStatus.length === 0) {
+            // end loop early
+            break;
+        }
+        let newHeight = blockchain.getHeight();
+        let txHashes = blockchain.getBlockTxHashes(newHeight);
+        if (typeof txHashes === 'undefined' || txHashes.length === 0) {
+            emptyBlockNum++;
+        }
+        if (newHeight === currentHeight) {
+            // chain height not increase
+            await Util.sleep(1000).then(() => {
+            });
+        }
+        currentHeight = newHeight;
+    }
+}
+
+/**
  * Perform test with specified number of transactions
  * @param {JSON} msg start test message
  * @param {Object} cb callback module
@@ -130,38 +163,37 @@ function submitCallback(count) {
  * @return {Promise} promise object
  */
 async function runFixedNumber(msg, cb, context) {
-    log('Info: client ' + process.pid +  ' start test runFixedNumber()' + (cb.info ? (':' + cb.info) : ''));
+    log('Info: client ' + process.pid + ' start test runFixedNumber()' + (cb.info ? (':' + cb.info) : ''));
     let rateControl = new RateControl(msg.rateControl, blockchain);
     rateControl.init(msg);
 
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();
 
+    let notSureTxs = [];
     let promises = [];
-    while(txNum < msg.numb) {
-        promises.push(cb.run());
+    while (txNum < msg.numb) {
+        promises.push(cb.run().then((result) => {
+            if (result.GetStatus() !== 'failed' && blockchain.bcObj instanceof Ontology) {// tx has not been confirmed yet
+                // query tx state
+                if (blockchain.bcObj.insureTx(result.GetID())) {
+                    result.SetStatusSuccess();
+                    addResult(result);
+                } else {
+                    notSureTxs.push(result);
+                }
+                return Promise.resolve();
+            }
+        }));
         await rateControl.applyRateControl(startTime, txNum, results);
         txNum++;
     }
 
+    await Promise.all(promises);
     // wait all tx processed
-    if (blockchain.bcObj.hasOwnProperty('handledWholeTx')) {
-        await blockchain.bcObj.insureWholeTxHandled();
+    if (blockchain.bcObj.hasOwnProperty('handledWholeTx') && notSureTxs.length !== 0) {
+        insureTxs(notSureTxs);
     }
-    await Promise.all(promises).then((result) => {
-        result.forEach(function (item) {
-            if (item.GetStatus() !== 'failed' && blockchain.bcObj instanceof Ontology){// tx has not been confirmed yet
-                // query tx state
-                if (blockchain.bcObj.insureTx(item.GetID())){
-                    item.SetStatusSuccess();
-                }else{
-                    item.SetStatusFail();
-                }
-            }
-            addResult(item);
-            log('%d is end', ++endNum);
-        });
-    });
     await rateControl.end();
     return await blockchain.releaseContext(context);
 }
@@ -174,7 +206,7 @@ async function runFixedNumber(msg, cb, context) {
  * @return {Promise} promise object
  */
 async function runDuration(msg, cb, context) {
-    log('Info: client ' + process.pid +  ' start test runDuration()' + (cb.info ? (':' + cb.info) : ''));
+    log('Info: client ' + process.pid + ' start test runDuration()' + (cb.info ? (':' + cb.info) : ''));
     let rateControl = new RateControl(msg.rateControl, blockchain);
     rateControl.init(msg);
     const duration = msg.txDuration; // duration in seconds
@@ -183,7 +215,7 @@ async function runDuration(msg, cb, context) {
     startTime = Date.now();
 
     let promises = [];
-    while ((Date.now() - startTime)/1000 < duration) {
+    while ((Date.now() - startTime) / 1000 < duration) {
         promises.push(cb.run().then((result) => {
             addResult(result);
             return Promise.resolve();
@@ -214,7 +246,7 @@ function doTest(msg) {
      */
     let clearUpdateInter = function () {
         // stop reporter
-        if(txUpdateInter) {
+        if (txUpdateInter) {
             clearInterval(txUpdateInter);
             txUpdateInter = null;
             txUpdate();
@@ -222,16 +254,16 @@ function doTest(msg) {
     };
 
     return blockchain.getContext(msg.label, msg.clientargs).then((context) => {
-        if(typeof context === 'undefined') {
+        if (typeof context === 'undefined') {
             context = {
-                engine : {
-                    submitCallback : submitCallback
+                engine: {
+                    submitCallback: submitCallback
                 }
             };
         }
         else {
             context.engine = {
-                submitCallback : submitCallback
+                submitCallback: submitCallback
             };
         }
         if (msg.txDuration) {
