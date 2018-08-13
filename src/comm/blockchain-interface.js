@@ -1,9 +1,9 @@
 /**
-* Copyright 2017 HUAWEI. All Rights Reserved.
-*
-* SPDX-License-Identifier: Apache-2.0
-*
-*/
+ * Copyright 2017 HUAWEI. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ */
 
 'use strict';
 
@@ -27,8 +27,6 @@ class BlockchainInterface {
     }
 
 
-
-
     /**
      * Install smart contract(s)
      */
@@ -41,9 +39,9 @@ class BlockchainInterface {
      * @param {Number} number count of test clients
      * @return {Promise} obtained material for test clients
      */
-    prepareClients (number) {
+    prepareClients(number) {
         let result = [];
-        for(let i = 0 ; i< number ; i++) {
+        for (let i = 0; i < number; i++) {
             result[i] = {}; // as default, return an empty object for each client
         }
         return Promise.resolve(result);
@@ -80,6 +78,38 @@ class BlockchainInterface {
      */
     invokeSmartContract(context, contractID, contractVer, args, timeout) {
         throw new Error('invokeSmartContract is not implemented for this blockchain system');
+    }
+
+    /**
+     * transfer token
+     * @param {string} txHash transaction data
+     * @param {string} txData transaction hash
+     */
+    transfer(txHash, txData) {
+        throw new Error('transfer is not implemented for this blockchain system');
+    }
+
+    /**
+     * get current height
+     */
+    getHeight() {
+        throw new Error('getHeight is not implemented for this blockchain system');
+    }
+
+    /**
+     * get current height
+     * @param {int} height block height
+     */
+    getBlockTxHashes(height) {
+        throw new Error('getBlockTxHashes is not implemented for this blockchain system');
+    }
+
+    /**
+     * insure tx
+     * @param {string} txHash tx hash
+     */
+    insureTx(txHash) {
+        throw new Error('insureTx is not implemented for this blockchain system');
     }
 
     /**

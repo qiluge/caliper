@@ -12,7 +12,6 @@ const bc = require('../blockchain.js');
 const RateControl = require('../rate-control/rateControl.js');
 const Util = require('../util.js');
 const log = Util.log;
-const Ontology = require('../../ontology/ontology.js');
 
 let blockchain;
 let results = [];
@@ -174,7 +173,7 @@ async function runFixedNumber(msg, cb, context) {
     let promises = [];
     while (txNum < msg.numb) {
         promises.push(cb.run().then((result) => {
-            if (result.GetStatus() !== 'failed' && blockchain.bcObj instanceof Ontology) {// tx has not been confirmed yet
+            if (result.GetStatus() !== 'failed' && blockchain.getType() === 'ontology') {// tx has not been confirmed yet
                 // query tx state
                 if (blockchain.bcObj.insureTx(result.GetID())) {
                     result.SetStatusSuccess();
@@ -191,7 +190,7 @@ async function runFixedNumber(msg, cb, context) {
 
     await Promise.all(promises);
     // wait all tx processed
-    if (blockchain.bcObj.hasOwnProperty('handledWholeTx') && notSureTxs.length !== 0) {
+    if (blockchain.getType() === 'ontology' && notSureTxs.length !== 0) {
         insureTxs(notSureTxs);
     }
     await rateControl.end();

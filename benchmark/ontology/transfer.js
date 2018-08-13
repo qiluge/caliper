@@ -6,14 +6,19 @@ const Util = require('../../src/comm/util.js');
 const log = Util.log;
 
 let txNum, txIndex;
-let bc, contx;
+let bc;
 let txHash=[], tx=[];
+let sendTx = true; // false means that client monitor only
 
 
 // read tx from file, or use sdk to generate tx
 module.exports.init = function(blockchain, context, args) {
+    if (!args.hasOwnProperty('sendTx')) {
+        return Promise.reject(new Error('transfer init - "sendTx" is missed in the arguments'));
+    }
+    sendTx = args.sendTx;
     bc = blockchain;
-    contx = context;
+    // contx = context;
     txIndex = -1;
     let fileContent = fs.readFileSync('./transfer.txt', 'utf-8');
     let lineNum = 0;
@@ -39,7 +44,11 @@ module.exports.run = function() {
         txIndex = 0;
         log('there are no new tx, send duplicate tx to ontology!');
     }
-    return bc.invokeSmartContract(contx, 'simple', 'v0', {txHash: txHash[txIndex], txData:tx[txIndex]}, 30);
+    if (sendTx){
+        return bc.transfer(tx[txIndex], txHash[txIndex]);
+    }else {
+        return bc.transferNon(txHash[txIndex]);
+    }
 };
 
 module.exports.end = function() {
