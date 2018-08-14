@@ -20,8 +20,7 @@
         "author": "tester",
         "email": "tester@tester.com",
         "needStorage": true,
-        "path": "benchmark/ontology/hello.avm",
-        "abi": "benchmark/ontology/hello.abi"
+        "path": "benchmark/ontology/hello.avm"
       }
     ]
   }

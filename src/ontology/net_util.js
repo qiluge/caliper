@@ -24,7 +24,7 @@ class NetUtil {
             }
             return 1;
         }).catch(function (error) {
-            log(error);
+            log('postTx err:', error.message);
             return -1;
         });
     }
@@ -37,13 +37,13 @@ class NetUtil {
         return axios.get('http://localhost:20334/api/v1/block/height')
             .then(function (response) {
                 if (response.data.Error !== 0){
-                    return -1;
+                    return 0;
                 }
                 return response.data.Result;
             })
             .catch(function (error) {
-                log(error);
-                return -1;
+                log('getHeight err:', error.message);
+                return 0;
             });
     }
 
@@ -52,7 +52,7 @@ class NetUtil {
      * @param {int} height block height
      * @return {string[]} all tx hashes in the block
      */
-    static getTxNumOfHeight(height) {
+    static getBlockTxHashes(height) {
         return axios.get('http://localhost:20334/api/v1/block/transactions/height/' + height)
             .then(function (response) {
                 if (response.data.Error !== 0){
@@ -61,7 +61,7 @@ class NetUtil {
                 return response.data.Result.Transactions;
             })
             .catch(function (error) {
-                log(error);
+                log('getBlockTxHashes err:', error.message);
             });
     }
 
@@ -76,7 +76,7 @@ class NetUtil {
                 return response.data.Error === 0;
             })
             .catch(function (error) {
-                log(error);
+                log('insureTx err:', error.message);
                 return false;
             });
     }
@@ -89,13 +89,32 @@ class NetUtil {
     static getBlock(height){
         return axios.get('http://localhost:20334/api/v1/block/details/height/' + height)
             .then(function (response) {
-                if (response.data.Error === 0){
+                if (response.data.Error !== 0){
                     return -1;
                 }
                 return response.data.Result;
             })
             .catch(function (error) {
-                log(error);
+                log('getBlock err:', error.message);
+                return false;
+            });
+    }
+
+    /**
+     * get block by height
+     * @param{string} addr is account base58 address
+     * @return {Promise} balance json, contained ont and ong
+     */
+    static getBalance(addr){
+        return axios.get('http://localhost:20334/api/v1/balance/' + addr)
+            .then(function (response) {
+                if (response.data.Error !== 0){
+                    return -1;
+                }
+                return response.data.Result;
+            })
+            .catch(function (error) {
+                log('getBlock err:', error.message);
                 return false;
             });
     }

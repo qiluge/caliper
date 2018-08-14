@@ -50,9 +50,10 @@
         ],
         "arguments": {
           "invokeContract": true,
-          "contractName": "hello",
+          "abi": "benchmark/ontology/hello.abi",
+          "vmcode": "benchmark/ontology/hello.avm",
           "version": "1.0.0",
-          "func": "hello",
+          "func": "Hello",
           "args": [
             "ontology"
           ]

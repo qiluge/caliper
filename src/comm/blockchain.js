@@ -312,7 +312,7 @@ class Blockchain {
      * @return {string[]} all tx hashes in the block
      */
     getBlockTxHashes(height) {
-        return this.bcObj.getTxNumOfHeight(height);
+        return this.bcObj.getBlockTxHashes(height);
     }
 
     /**
@@ -322,6 +322,15 @@ class Blockchain {
      */
     insureTx(txHash) {
         return this.bcObj.insureTx(txHash);
+    }
+
+    /**
+     * get block generated time
+     * @param{int} height is block height
+     * @return {Promise} block timestamp
+     */
+    getBlockGenerateTime(height) {
+        return this.bcObj.getBlockGenerateTime(height);
     }
 }
 

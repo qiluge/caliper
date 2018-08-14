@@ -113,6 +113,14 @@ class BlockchainInterface {
     }
 
     /**
+     * get block generated time
+     * @param{int} height is block height
+     */
+    getBlockGenerateTime(height) {
+        throw new Error('getBlockGenerateTime is not implemented for this blockchain system');
+    }
+
+    /**
      * wait a block generate
      */
     waitABlock(){

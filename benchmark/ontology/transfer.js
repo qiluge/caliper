@@ -18,6 +18,7 @@ module.exports.init = async function (blockchain, context, args) {
     }
     sendTx = args.sendTx;
     bc = blockchain;
+    txIndex = -1;
     if (sendTx) {
         await bc.bcObj.initOnt(bc.bcObj.account.address);
         await bc.bcObj.withdrawOng(bc.bcObj.account.address);
@@ -58,7 +59,7 @@ module.exports.run = function () {
         log('there are no new tx, send duplicate tx to ontology!');
     }
     if (sendTx) {
-        return bc.sendTx(txData[txIndex], txHash[txIndex]);
+        return bc.sendTx(txHash[txIndex], txData[txIndex]);
     } else {
         return bc.sendNon(txHash[txIndex]);
     }

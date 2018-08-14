@@ -4,6 +4,7 @@ module.exports.info = 'invoke contract';
 const Util = require('../../src/comm/util.js');
 const log = Util.log;
 const ontSdk = require('ontology-ts-sdk');
+const fs = require('fs');
 
 let txNum, txIndex;
 let bc;
@@ -18,17 +19,22 @@ module.exports.init = async function (blockchain, context, args) {
     }
     invokeContract = args.invokeContract;
     bc = blockchain;
+    txIndex = -1;
     txNum = args.txNum;
-    if (invokeContract && (!args.hasOwnProperty('contractName') || !args.hasOwnProperty('func'))) {
+    if (invokeContract && !args.hasOwnProperty('func')) {
         return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
     }
     log('start generate invoke tx');
     if (invokeContract) {
+        // read abi info
+        let abiFileContent = fs.readFileSync(args.abi, 'utf-8');
+        let abiInfo = ontSdk.AbiInfo.parseJson(abiFileContent);
+        abiInfo.vmCode = fs.readFileSync(args.vmcode, 'utf-8');
         for (let i = 0; i < txNum; i++) {
-            let invokeArgs;
+            let invokeArgs = {};
             invokeArgs.func = args.func;
             invokeArgs.args = args.args;
-            let tx = bc.bcObj.genInvokeSmartContractTx(args.contractName, args.version, invokeArgs);
+            let tx = bc.bcObj.genInvokeSmartContractTx(abiInfo, args.version, invokeArgs);
             ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
             txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
             txData.push(tx.serialize());
@@ -53,7 +59,7 @@ module.exports.run = function () {
         log('there are no new tx, send duplicate tx to ontology!');
     }
     if (invokeContract) {
-        return bc.sendTx(txData[txIndex], txHash[txIndex]);
+        return bc.sendTx(txHash[txIndex], txData[txIndex]);
     } else {
         return bc.sendNon(txHash[txIndex]);
     }

@@ -122,14 +122,16 @@ function submitCallback(count) {
 /**
  * If three sequential empty block has been generated, it can be considered that whole tx has been processed.
  * @param{TxStatus[]} notsureTxStatus unconfirmed transactions
+ * @return{Promise<any>} empty promise
  */
 async function insureTxs(notsureTxStatus) {
     // first, record current height of block chain, and try to confirm all notsure txs
-    let currentHeight = blockchain.getHeight();
+    let currentHeight = await blockchain.getHeight();
+    log('insure tx current height is ', currentHeight);
     let emptyBlockNum = 0;
     while (notsureTxStatus.length > 0 && emptyBlockNum <= 2) {
         for (let i = 0; i < notsureTxStatus.length; i++) {
-            if (blockchain.insureTx(notsureTxStatus[i].GetID())) {
+            if (await blockchain.insureTx(notsureTxStatus[i].GetID())) {
                 notsureTxStatus[i].SetStatusSuccess();
                 addResult(notsureTxStatus[i]);
                 notsureTxStatus.splice(i, 1);
@@ -140,8 +142,8 @@ async function insureTxs(notsureTxStatus) {
             // end loop early
             break;
         }
-        let newHeight = blockchain.getHeight();
-        let txHashes = blockchain.getBlockTxHashes(newHeight);
+        let newHeight = await blockchain.getHeight();
+        let txHashes = await blockchain.getBlockTxHashes(newHeight);
         if (typeof txHashes === 'undefined' || txHashes.length === 0) {
             emptyBlockNum++;
         }
@@ -151,12 +153,19 @@ async function insureTxs(notsureTxStatus) {
             });
         }
         currentHeight = newHeight;
+        log('insure tx current height is ', currentHeight);
     }
-    for (let i = 0; i < notsureTxStatus.length; i++) {
-        notsureTxStatus[i].SetStatusFail();
-        notsureTxStatus[i].SetFailTime(blockchain.getBlockGenerateTime(currentHeight - 2));
-        addResult(notsureTxStatus[i]);
+    log('insure tx current height is ', currentHeight);
+    if (notsureTxStatus.length > 0) {
+        let lastBlockGenTime = await blockchain.getBlockGenerateTime(currentHeight - 2);
+        for (let i = 0; i < notsureTxStatus.length; i++) {
+            notsureTxStatus[i].SetStatusFail();
+            notsureTxStatus[i].SetFailTime(lastBlockGenTime);
+            addResult(notsureTxStatus[i]);
+        }
     }
+    log('insure tx ended');
+    return Promise.resolve();
 }
 
 /**
@@ -181,13 +190,15 @@ async function runFixedNumber(msg, cb, context) {
         promises.push(cb.run().then((result) => {
             if (result.GetStatus() !== 'failed' && blockchain.getType() === 'ontology') {// tx has not been confirmed yet
                 // query tx state
-                if (blockchain.bcObj.insureTx(result.GetID())) {
-                    result.SetStatusSuccess();
-                    addResult(result);
-                } else {
-                    notSureTxs.push(result);
-                }
-                return Promise.resolve();
+                blockchain.bcObj.insureTx(result.GetID()).then((isSuccess) => {
+                    if (isSuccess) {
+                        result.SetStatusSuccess();
+                        addResult(result);
+                    } else {
+                        notSureTxs.push(result);
+                    }
+                    return Promise.resolve();
+                });
             }
         }));
         await rateControl.applyRateControl(startTime, txNum, results);
@@ -197,7 +208,7 @@ async function runFixedNumber(msg, cb, context) {
     await Promise.all(promises);
     // wait all tx processed
     if (blockchain.getType() === 'ontology' && notSureTxs.length !== 0) {
-        insureTxs(notSureTxs);
+        await insureTxs(notSureTxs);
     }
     await rateControl.end();
     return await blockchain.releaseContext(context);

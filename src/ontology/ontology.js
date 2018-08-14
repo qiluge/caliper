@@ -70,13 +70,15 @@ class Ontology extends BlockchainInterface {
         }
         let multiSignNum = Math.ceil((5 * this.peerWallets.length + 6) / 7);
         const mulAddr = ontSdk.Crypto.Address.fromMultiPubKeys(multiSignNum, pks);
-        const tx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 100, '0',
+        log('mulAddr is ', mulAddr.toBase58());
+        const tx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 1000000000, '0',
             '20000', mulAddr);
         for (let i = 0; i < multiSignNum; i++) {
             ontSdk.TransactionBuilder.signTx(tx, multiSignNum, pks, pris[i]);
         }
         NetUtil.postTx(tx.serialize());
         await this.waitABlock();
+        log('balance is ', await NetUtil.getBalance(this.account.address.toBase58()));
     }
 
     /**
@@ -89,6 +91,7 @@ class Ontology extends BlockchainInterface {
         ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
         NetUtil.postTx(tx.serialize());
         await this.waitABlock();
+        log('balance is ', await NetUtil.getBalance(this.account.address.toBase58()));
     }
 
     /**
@@ -108,11 +111,6 @@ class Ontology extends BlockchainInterface {
                 needStorage, '0', '20000000', this.account.address);
             ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
             NetUtil.postTx(tx.serialize());
-            // read abi info
-            let abiFileContent = fs.readFileSync(item.abi, 'utf-8');
-            let abiInfo = ontSdk.AbiInfo.parseJson(abiFileContent);
-            abiInfo.vmCode = vmCode;
-            this.contractAbiInfo.set(name, abiInfo);
         });
         await this.waitABlock();
         return Promise.resolve();
@@ -148,25 +146,20 @@ class Ontology extends BlockchainInterface {
         return NetUtil.postTx(txData).then((result) => {
             if (result < 0) {
                 invokeStatus.SetStatusFail();
-                log('tx %s failed', result.GetID());
+                log('tx failed', invokeStatus.GetID());
             }
-            log('sendtx');
             return invokeStatus;
         });
     }
 
     /**
      * generate invoke smart contract/submit transactions
-     * @param {String} contractID contract name
+     * @param {AbiInfo} abiInfo contract abi info
      * @param {String} contractVer version of the contract
      * @param {Array} args array of JSON formatted arguments for multiple transactions
      * @return {Transaction} invoke smart contract transaction
      */
-    genInvokeSmartContractTx(contractID, contractVer, args) {
-        let abiInfo = this.contractAbiInfo.get(contractID);
-        if (typeof abiInfo === 'undefined') {
-            throw new Error('the contract doesn\'t deploy!');
-        }
+    genInvokeSmartContractTx(abiInfo, contractVer, args) {
         let abiFunc = abiInfo.getFunction(args.func);
         if (typeof abiFunc === 'undefined') {
             throw new Error('not define invoke contract func!');
@@ -191,12 +184,12 @@ class Ontology extends BlockchainInterface {
     }
 
     /**
-     * get current height
+     * get tx hashes of this height
      * @param {int} height block height
      * @return {string[]} all tx hashes in the block
      */
     getBlockTxHashes(height) {
-        return NetUtil.getTxNumOfHeight(height);
+        return NetUtil.getBlockTxHashes(height);
     }
 
     /**
@@ -221,6 +214,7 @@ class Ontology extends BlockchainInterface {
             } else {
                 await Util.sleep(1000).then(() => {
                 });
+                log('wait a block, height is ', newHeight);
             }
         } while (newHeight <= currnetHeight);
     }
@@ -232,7 +226,7 @@ class Ontology extends BlockchainInterface {
      */
     getBlockGenerateTime(height) {
         return NetUtil.getBlock(height).then((block) => {
-            return block.Timestamp;
+            return block.Header.Timestamp;
         });
     }
 }
