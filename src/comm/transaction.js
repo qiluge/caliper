@@ -102,6 +102,14 @@ class TxStatus {
     }
 
     /**
+     * reduce failed tx final time
+     * @param{number} confirmTime should be last block that tx has been record
+     */
+    SetFailTime(confirmTime) {
+        this.status.time_final = confirmTime;
+    }
+
+    /**
      * Check if the tx's status is verified
      * @return {boolean}, verified or not
      */

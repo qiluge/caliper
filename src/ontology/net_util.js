@@ -80,6 +80,25 @@ class NetUtil {
                 return false;
             });
     }
+
+    /**
+     * get block by height
+     * @param{int} height is block height
+     * @return {Promise} block
+     */
+    static getBlock(height){
+        return axios.get('http://localhost:20334/api/v1/block/details/height/' + height)
+            .then(function (response) {
+                if (response.data.Error === 0){
+                    return -1;
+                }
+                return response.data.Result;
+            })
+            .catch(function (error) {
+                log(error);
+                return false;
+            });
+    }
 }
 
 

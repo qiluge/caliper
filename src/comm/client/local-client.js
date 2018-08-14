@@ -127,7 +127,7 @@ async function insureTxs(notsureTxStatus) {
     // first, record current height of block chain, and try to confirm all notsure txs
     let currentHeight = blockchain.getHeight();
     let emptyBlockNum = 0;
-    while (notsureTxStatus.length > 0 && emptyBlockNum <= 2 ) {
+    while (notsureTxStatus.length > 0 && emptyBlockNum <= 2) {
         for (let i = 0; i < notsureTxStatus.length; i++) {
             if (blockchain.insureTx(notsureTxStatus[i].GetID())) {
                 notsureTxStatus[i].SetStatusSuccess();
@@ -151,6 +151,11 @@ async function insureTxs(notsureTxStatus) {
             });
         }
         currentHeight = newHeight;
+    }
+    for (let i = 0; i < notsureTxStatus.length; i++) {
+        notsureTxStatus[i].SetStatusFail();
+        notsureTxStatus[i].SetFailTime(blockchain.getBlockGenerateTime(currentHeight - 2));
+        addResult(notsureTxStatus[i]);
     }
 }
 

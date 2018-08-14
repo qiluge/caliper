@@ -183,23 +183,14 @@ class Ontology extends BlockchainInterface {
             ontSdk.Crypto.Address.fromVmCode(abiInfo.vmCode), '0', '20000000', this.account.address);
         ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
         return tx;
-        // let txHash = ontSdk.utils.reverseHex(tx.getHash());
-        // let invokeStatus = new TxStatus(txHash);
-        // return NetUtil.postTx(tx.serialize()).then((result) => {
-        //     if (result < 0) {
-        //         invokeStatus.SetStatusFail();
-        //         log('tx %s failed', result.GetID());
-        //     }
-        //     return invokeStatus;
-        // });
     }
 
     /**
      * get current height
      * @return {int} current height
      */
-    async getHeight() {
-        return await NetUtil.getHeight();
+    getHeight() {
+        return NetUtil.getHeight();
     }
 
     /**
@@ -207,8 +198,8 @@ class Ontology extends BlockchainInterface {
      * @param {int} height block height
      * @return {string[]} all tx hashes in the block
      */
-    async getBlockTxHashes(height) {
-        return await NetUtil.getTxNumOfHeight(height);
+    getBlockTxHashes(height) {
+        return NetUtil.getTxNumOfHeight(height);
     }
 
     /**
@@ -216,8 +207,8 @@ class Ontology extends BlockchainInterface {
      * @param {string} txHash tx hash
      * @return {Promise} tx is success or failed
      */
-    async insureTx(txHash) {
-        return await NetUtil.insureTx(txHash);
+    insureTx(txHash) {
+        return NetUtil.insureTx(txHash);
     }
 
     /**
@@ -235,6 +226,17 @@ class Ontology extends BlockchainInterface {
                 });
             }
         } while (newHeight <= currnetHeight);
+    }
+
+    /**
+     * get block generated time
+     * @param{int} height is block height
+     * @return {Promise} block timestamp
+     */
+    getBlockGenerateTime(height){
+        return NetUtil.getBlock(height).then((block)=>{
+            return block.Timestamp;
+        });
     }
 }
 
