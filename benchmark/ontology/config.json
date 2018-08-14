@@ -3,32 +3,72 @@
     "type": "ontology",
     "config": "benchmark/ontology/ontology.json"
   },
-  "command" : {
+  "command": {
     "start": "./start.sh",
-    "end" : "pkill -9 ontology"
+    "end": "pkill -9 ontology"
   },
   "test": {
     "name": "ontology test",
-    "description" : "This is ontology tps test!",
+    "description": "This is ontology tps test!",
     "clients": {
       "type": "local",
       "number": 1
     },
-    "rounds": [{
-        "label" : "transfer",
-        "txNumber" : [500],
-        "rateControl" : [{"type": "fixed-rate", "opts": {"tps" : 250}}],
-        "arguments": { "sendTx": false, "invokeContranct":true, "contractName":"hello", "contractFunc":"hello" },
-        "callback" : "benchmark/ontology/transfer.js"
-      }]
+    "rounds": [
+      {
+        "label": "transferONG",
+        "txNumber": [
+          500
+        ],
+        "rateControl": [
+          {
+            "type": "fixed-rate",
+            "opts": {
+              "tps": 250
+            }
+          }
+        ],
+        "arguments": {
+          "sendTx": false,
+          "sendToAddress": "AJUAvcs89o8b3vYQCaJuJ4TcVqYqJkV1Lw"
+        },
+        "callback": "benchmark/ontology/transfer.js"
+      },
+      {
+        "label": "invokeContract",
+        "txNumber": [
+          500
+        ],
+        "rateControl": [
+          {
+            "type": "fixed-rate",
+            "opts": {
+              "tps": 250
+            }
+          }
+        ],
+        "arguments": {
+          "invokeContract": true,
+          "contractName": "hello",
+          "version": "1.0.0",
+          "func": "hello",
+          "args": [
+            "ontology"
+          ]
+        },
+        "callback": "benchmark/ontology/invoke.js"
+      }
+    ]
   },
   "monitor": {
-    "type": ["process"],
+    "type": [
+      "process"
+    ],
     "process": [
       {
-        "command" : "./ontology",
-        "arguments" : "--testmode,--networkid,3,--gaslimit,0,--gasprice,0,--rest,--localrpc",
-        "multiOutput" : "avg"
+        "command": "./ontology",
+        "arguments": "--testmode,--networkid,3,--gaslimit,0,--gasprice,0,--rest,--localrpc",
+        "multiOutput": "avg"
       }
     ],
     "interval": 1

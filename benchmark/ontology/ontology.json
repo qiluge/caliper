@@ -1,17 +1,27 @@
 {
   "ontology": {
-    "wallet":"wallet.dat",
-    "password":"passwordtest",
-    "contract" :[
+    "consensus": "vbft",
+    "peers": [
+      "wallets/peer1/wallet.dat",
+      "wallets/peer2/wallet.dat",
+      "wallets/peer3/wallet.dat",
+      "wallets/peer4/wallet.dat",
+      "wallets/peer5/wallet.dat",
+      "wallets/peer6/wallet.dat",
+      "wallets/peer7/wallet.dat"
+    ],
+    "wallet": "wallet.dat",
+    "password": "passwordtest",
+    "contract": [
       {
-        "name":"hello",
-        "version":"1.0.0",
-        "description":"test contract",
-        "author":"tester",
-        "email":"tester@tester.com",
-        "needStorage":true,
-        "path":"benchmark/ontology/hello.avm",
-        "abi":"benchmark/ontology/hello.abi"
+        "name": "hello",
+        "version": "1.0.0",
+        "description": "test contract",
+        "author": "tester",
+        "email": "tester@tester.com",
+        "needStorage": true,
+        "path": "benchmark/ontology/hello.avm",
+        "abi": "benchmark/ontology/hello.abi"
       }
     ]
   }

@@ -114,21 +114,21 @@ class Blockchain {
     }
 
     /**
-     * transfer token
+     * send transaction
      * @param {string} txHash transaction data
      * @param {string} txData transaction hash
      * @return {TxStatus}The txStatus for the transaction
      */
-    transfer(txHash, txData) {
-        return this.bcObj.transfer(txHash, txData);
+    sendTx(txHash, txData) {
+        return this.bcObj.sendTx(txHash, txData);
     }
 
     /**
-     * transfer nothing, return a default tx status
+     * send nothing, return a default tx status
      * @param {string} txHash transaction hash.
      * @return {TxStatus} he txStatus for the transaction
      */
-    transferNon(txHash) {
+    sendNon(txHash) {
         return Promise.resolve(new TxStatus(txHash));
     }
 

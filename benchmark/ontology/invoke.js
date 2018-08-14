@@ -8,27 +8,25 @@ const ontSdk = require('ontology-ts-sdk');
 let txNum, txIndex;
 let bc;
 let txHash = [], txData = [];
-let sendTx = true; // false means that client monitor only
+let invokeContract = true; // false means that client monitor only
 
 
 // read tx from file, or use sdk to generate tx
 module.exports.init = async function (blockchain, context, args) {
-    if (!args.hasOwnProperty('sendTx')) {
-        return Promise.reject(new Error('sendTx init - "sendTx" is missed in the arguments'));
+    if (!args.hasOwnProperty('invokeContract')) {
+        return Promise.reject(new Error('sendTx init - "invokeContract" is missed in the arguments'));
     }
-    sendTx = args.sendTx;
+    invokeContract = args.invokeContract;
     bc = blockchain;
-    if (sendTx) {
-        await bc.bcObj.initOnt(bc.bcObj.account.address);
-        await bc.bcObj.withdrawOng(bc.bcObj.account.address);
-    }
     txNum = args.txNum;
-    if (sendTx && !args.hasOwnProperty('sendToAddress')) {
-        return Promise.reject(new Error('sendTx init - "sendToAddress" is missed in the arguments'));
+    if (invokeContract && (!args.hasOwnProperty('contractName') || !args.hasOwnProperty('func'))) {
+        return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
     }
     for (let i = 0; i < txNum; i++) {
-        let tx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONG', bc.bcObj.account.address,
-            new ontSdk.Crypto.Address(args.sendToAddress), 0.001 * 1e9, '0', '20000', bc.bcObj.account.address);
+        let invokeArgs;
+        invokeArgs.func = args.func;
+        invokeArgs.args = args.args;
+        let tx = bc.bcObj.genInvokeSmartContractTx(args.contractName, args.version, invokeArgs);
         ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
         txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
         txData.push(tx.serialize());
@@ -44,7 +42,7 @@ module.exports.run = function () {
         txIndex = 0;
         log('there are no new tx, send duplicate tx to ontology!');
     }
-    if (sendTx) {
+    if (invokeContract) {
         return bc.sendTx(txData[txIndex], txHash[txIndex]);
     } else {
         return bc.sendNon(txHash[txIndex]);

@@ -22,6 +22,8 @@ class Ontology extends BlockchainInterface {
         let jsonInfo = JSON.parse(fileContent);
         let blockChainConfig = JSON.parse(fs.readFileSync(jsonInfo.blockchain.config, 'utf-8'));
         this.contractConfig = blockChainConfig.ontology.contract;
+        this.peerWallets = blockChainConfig.ontology.peers;
+        this.password = blockChainConfig.ontology.password; // peers and self password is same
         let walletFileContent = fs.readFileSync(blockChainConfig.ontology.wallet, 'utf-8');
         this.wallet = ontSdk.Wallet.parseJson(walletFileContent);
         this.account = this.wallet.accounts[0];
@@ -34,7 +36,7 @@ class Ontology extends BlockchainInterface {
                 parallel: this.wallet.scrypt.p,
                 size: this.wallet.scrypt.dkLen
             };
-            this.privateKey = encryptedPrivateKeyObj.decrypt(blockChainConfig.ontology.password,
+            this.privateKey = encryptedPrivateKeyObj.decrypt(this.password,
                 this.account.address, saltHex, decryptParam);
         } catch (err) {
             throw Error('decrypt wallet failed');
@@ -48,6 +50,48 @@ class Ontology extends BlockchainInterface {
      */
     init() {
         return Promise.resolve();
+    }
+
+    /**
+     * sendTx ont to a specific account
+     */
+    async initOnt() {
+        const pks = [];
+        const pris = [];
+        for (const peerWallet of this.peerWallets) {
+            let wallet = ontSdk.Wallet.parseJson(fs.readFileSync(peerWallet, 'utf-8'));
+            pks.push(new ontSdk.Crypto.PublicKey(wallet.accounts[0].publicKey));
+            const p = new ontSdk.Crypto.PrivateKey(wallet.accounts[0].key);
+            let params = {
+                cost: wallet.scrypt.n,
+                blockSize: wallet.scrypt.r,
+                parallel: wallet.scrypt.p,
+                size: wallet.scrypt.dkLen
+            };
+            pris.push(p.decrypt(this.password, new ontSdk.Crypto.Address(wallet.accounts[0].address),
+                wallet.accounts[0].salt, params));
+        }
+        let multiSignNum = (5 * this.peerWallets.length + 6) / 7;
+        const mulAddr = ontSdk.Crypto.Address.fromMultiPubKeys(multiSignNum, pks);
+        const tx = ontSdk.TransactionBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 100, '0',
+            '20000', mulAddr);
+        for (let i = 0; i < multiSignNum; i++) {
+            ontSdk.TransactionBuilder.signTx(tx, multiSignNum, pks, pris[i]);
+        }
+        NetUtil.postTx(tx.serialize());
+        await this.waitABlock();
+    }
+
+    /**
+     * withdraw ong on a specific account
+     */
+    async withdrawOng() {
+        const amount = 1e9; // multiply 1e9 to set the precision
+        let address = this.account.address;
+        const tx = ontSdk.TransactionBuilder.makeWithdrawOngTx(address, address, amount, address, '0', '20000');
+        ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
+        NetUtil.postTx(tx.serialize());
+        await this.waitABlock();
     }
 
     /**
@@ -72,8 +116,6 @@ class Ontology extends BlockchainInterface {
             let abiInfo = ontSdk.AbiInfo.parseJson(abiFileContent);
             abiInfo.vmCode = vmCode;
             this.contractAbiInfo.set(name, abiInfo);
-            let txHash = ontSdk.utils.reverseHex(tx.getHash())
-            log('deploy', txHash);
         });
         await this.waitABlock();
         return Promise.resolve();
@@ -99,12 +141,12 @@ class Ontology extends BlockchainInterface {
     }
 
     /**
-     * transfer ont or ong
+     * send transaction
      * @param {string} txHash transaction data
      * @param {string} txData transaction hash
      * @return {TxStatus}The txStatus for the transaction
      */
-    transfer(txHash, txData) {
+    sentTx(txHash, txData) {
         let invokeStatus = new TxStatus(txHash);
         return NetUtil.postTx(txData).then((result) => {
             if (result < 0) {
@@ -117,21 +159,19 @@ class Ontology extends BlockchainInterface {
     }
 
     /**
-     * Invoke smart contract/submit transactions
-     * @param {Object} context context object
+     * generate invoke smart contract/submit transactions
      * @param {String} contractID contract name
      * @param {String} contractVer version of the contract
      * @param {Array} args array of JSON formatted arguments for multiple transactions
-     * @param {Number} timeout request timeout, in second
-     * @return {Promise} txStatus object or an array of txStatus objects
+     * @return {Transaction} invoke smart contract transaction
      */
-    invokeSmartContract(context, contractID, contractVer, args, timeout) {
+    genInvokeSmartContractTx( contractID, contractVer, args) {
         let abiInfo = this.contractAbiInfo.get(contractID);
         if (typeof abiInfo === 'undefined') {
             throw new Error('the contract doesn\'t deploy!');
         }
         let abiFunc = abiInfo.getFunction(args.func);
-        if (!args.hasOwnProperty('func') || typeof abiFunc === 'undefined') {
+        if ( typeof abiFunc === 'undefined'){
             throw new Error('not define invoke contract func!');
         }
         for (let i = 0; i < abiFunc.parameters.length; i++) {
@@ -142,17 +182,16 @@ class Ontology extends BlockchainInterface {
         let tx = ontSdk.TransactionBuilder.makeInvokeTransaction(abiFunc.name, abiFunc.parameters,
             ontSdk.Crypto.Address.fromVmCode(abiInfo.vmCode), '0', '20000000', this.account.address);
         ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
-        let txHash = ontSdk.utils.reverseHex(tx.getHash())
-        let invokeStatus = new TxStatus(txHash);
-        log('invoke', txHash);
-        return NetUtil.postTx(tx.serialize()).then((result) => {
-            if (result < 0) {
-                invokeStatus.SetStatusFail();
-                log('tx %s failed', result.GetID());
-            }
-            log('sendtx');
-            return invokeStatus;
-        });
+        return tx;
+        // let txHash = ontSdk.utils.reverseHex(tx.getHash());
+        // let invokeStatus = new TxStatus(txHash);
+        // return NetUtil.postTx(tx.serialize()).then((result) => {
+        //     if (result < 0) {
+        //         invokeStatus.SetStatusFail();
+        //         log('tx %s failed', result.GetID());
+        //     }
+        //     return invokeStatus;
+        // });
     }
 
     /**

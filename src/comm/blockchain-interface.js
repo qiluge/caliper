@@ -81,12 +81,12 @@ class BlockchainInterface {
     }
 
     /**
-     * transfer token
+     * send transaction
      * @param {string} txHash transaction data
      * @param {string} txData transaction hash
      */
-    transfer(txHash, txData) {
-        throw new Error('transfer is not implemented for this blockchain system');
+    sendTx(txHash, txData) {
+        throw new Error('sendTx is not implemented for this blockchain system');
     }
 
     /**

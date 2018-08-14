@@ -166,6 +166,7 @@ async function runFixedNumber(msg, cb, context) {
     let rateControl = new RateControl(msg.rateControl, blockchain);
     rateControl.init(msg);
 
+    msg.args.txNum = msg.numb;
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();
 
