@@ -18,9 +18,7 @@ class Ontology extends BlockchainInterface {
      */
     constructor(config_path) {
         super(config_path);
-        let fileContent = fs.readFileSync(this.configPath, 'utf-8');
-        let jsonInfo = JSON.parse(fileContent);
-        let blockChainConfig = JSON.parse(fs.readFileSync(jsonInfo.blockchain.config, 'utf-8'));
+        let blockChainConfig = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
         this.contractConfig = blockChainConfig.ontology.contract;
         this.peerWallets = blockChainConfig.ontology.peers;
         this.password = blockChainConfig.ontology.password; // peers and self password is same
