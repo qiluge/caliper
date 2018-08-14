@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports.info = 'sendTx ont';
+module.exports.info = 'invoke contract';
 const Util = require('../../src/comm/util.js');
 const log = Util.log;
 const ontSdk = require('ontology-ts-sdk');
@@ -22,7 +22,7 @@ module.exports.init = async function (blockchain, context, args) {
     if (invokeContract && (!args.hasOwnProperty('contractName') || !args.hasOwnProperty('func'))) {
         return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
     }
-    log('start generate tx');
+    log('start generate invoke tx');
     if (invokeContract) {
         for (let i = 0; i < txNum; i++) {
             let invokeArgs;
@@ -40,7 +40,7 @@ module.exports.init = async function (blockchain, context, args) {
             txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
         }
     }
-    log('generate down');
+    log('generate invoke tx down');
     return Promise.resolve();
 };
 
