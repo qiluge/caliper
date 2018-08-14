@@ -30,7 +30,8 @@
         ],
         "arguments": {
           "sendTx": false,
-          "sendToAddress": "AJUAvcs89o8b3vYQCaJuJ4TcVqYqJkV1Lw"
+          "sendToAddress": "AJUAvcs89o8b3vYQCaJuJ4TcVqYqJkV1Lw",
+          "asset":"ONG"
         },
         "callback": "benchmark/ontology/transfer.js"
       },

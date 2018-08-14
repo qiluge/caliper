@@ -26,13 +26,26 @@ module.exports.init = async function (blockchain, context, args) {
     if (sendTx && !args.hasOwnProperty('sendToAddress')) {
         return Promise.reject(new Error('sendTx init - "sendToAddress" is missed in the arguments'));
     }
-    for (let i = 0; i < txNum; i++) {
-        let tx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONG', bc.bcObj.account.address,
-            new ontSdk.Crypto.Address(args.sendToAddress), 0.001 * 1e9, '0', '20000', bc.bcObj.account.address);
-        ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-        txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
-        txData.push(tx.serialize());
+    if (!args.hasOwnProperty('asset')) {
+        args.asset = 'ONG';
     }
+    log('start generate tx');
+    if (sendTx) {
+        for (let i = 0; i < txNum; i++) {
+            let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(args.asset, bc.bcObj.account.address,
+                new ontSdk.Crypto.Address(args.sendToAddress), 0.001 * 1e9, '0', '20000', bc.bcObj.account.address);
+            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
+            txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
+            txData.push(tx.serialize());
+        }
+    } else {
+        for (let i = 0; i < txNum; i++) {
+            // if the client only monitor, push a fake tx hash
+            // the fake hash is not queried in chain
+            txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
+        }
+    }
+    log('generate down');
     return Promise.resolve();
 };
 

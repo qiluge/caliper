@@ -22,15 +22,25 @@ module.exports.init = async function (blockchain, context, args) {
     if (invokeContract && (!args.hasOwnProperty('contractName') || !args.hasOwnProperty('func'))) {
         return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
     }
-    for (let i = 0; i < txNum; i++) {
-        let invokeArgs;
-        invokeArgs.func = args.func;
-        invokeArgs.args = args.args;
-        let tx = bc.bcObj.genInvokeSmartContractTx(args.contractName, args.version, invokeArgs);
-        ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-        txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
-        txData.push(tx.serialize());
+    log('start generate tx');
+    if (invokeContract) {
+        for (let i = 0; i < txNum; i++) {
+            let invokeArgs;
+            invokeArgs.func = args.func;
+            invokeArgs.args = args.args;
+            let tx = bc.bcObj.genInvokeSmartContractTx(args.contractName, args.version, invokeArgs);
+            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
+            txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
+            txData.push(tx.serialize());
+        }
+    } else {
+        for (let i = 0; i < txNum; i++) {
+            // if the client only monitor, push a fake tx hash
+            // the fake hash is not queried in chain
+            txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
+        }
     }
+    log('generate down');
     return Promise.resolve();
 };
 
