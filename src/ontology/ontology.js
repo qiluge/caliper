@@ -59,19 +59,18 @@ class Ontology extends BlockchainInterface {
         for (const peerWallet of this.peerWallets) {
             let wallet = ontSdk.Wallet.parseJson(fs.readFileSync(peerWallet, 'utf-8'));
             pks.push(new ontSdk.Crypto.PublicKey(wallet.accounts[0].publicKey));
-            const p = new ontSdk.Crypto.PrivateKey(wallet.accounts[0].key);
+            const p = new ontSdk.Crypto.PrivateKey(wallet.accounts[0].encryptedKey.key);
             let params = {
                 cost: wallet.scrypt.n,
                 blockSize: wallet.scrypt.r,
                 parallel: wallet.scrypt.p,
                 size: wallet.scrypt.dkLen
             };
-            pris.push(p.decrypt(this.password, new ontSdk.Crypto.Address(wallet.accounts[0].address),
-                wallet.accounts[0].salt, params));
+            pris.push(p.decrypt(this.password, wallet.accounts[0].address, wallet.accounts[0].salt, params));
         }
-        let multiSignNum = (5 * this.peerWallets.length + 6) / 7;
+        let multiSignNum = Math.ceil((5 * this.peerWallets.length + 6) / 7);
         const mulAddr = ontSdk.Crypto.Address.fromMultiPubKeys(multiSignNum, pks);
-        const tx = ontSdk.TransactionBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 100, '0',
+        const tx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 100, '0',
             '20000', mulAddr);
         for (let i = 0; i < multiSignNum; i++) {
             ontSdk.TransactionBuilder.signTx(tx, multiSignNum, pks, pris[i]);
@@ -86,7 +85,7 @@ class Ontology extends BlockchainInterface {
     async withdrawOng() {
         const amount = 1e9; // multiply 1e9 to set the precision
         let address = this.account.address;
-        const tx = ontSdk.TransactionBuilder.makeWithdrawOngTx(address, address, amount, address, '0', '20000');
+        const tx = ontSdk.OntAssetTxBuilder.makeWithdrawOngTx(address, address, amount, address, '0', '20000');
         ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
         NetUtil.postTx(tx.serialize());
         await this.waitABlock();
@@ -144,7 +143,7 @@ class Ontology extends BlockchainInterface {
      * @param {string} txData transaction hash
      * @return {TxStatus}The txStatus for the transaction
      */
-    sentTx(txHash, txData) {
+    sendTx(txHash, txData) {
         let invokeStatus = new TxStatus(txHash);
         return NetUtil.postTx(txData).then((result) => {
             if (result < 0) {
@@ -163,13 +162,13 @@ class Ontology extends BlockchainInterface {
      * @param {Array} args array of JSON formatted arguments for multiple transactions
      * @return {Transaction} invoke smart contract transaction
      */
-    genInvokeSmartContractTx( contractID, contractVer, args) {
+    genInvokeSmartContractTx(contractID, contractVer, args) {
         let abiInfo = this.contractAbiInfo.get(contractID);
         if (typeof abiInfo === 'undefined') {
             throw new Error('the contract doesn\'t deploy!');
         }
         let abiFunc = abiInfo.getFunction(args.func);
-        if ( typeof abiFunc === 'undefined'){
+        if (typeof abiFunc === 'undefined') {
             throw new Error('not define invoke contract func!');
         }
         for (let i = 0; i < abiFunc.parameters.length; i++) {
@@ -231,8 +230,8 @@ class Ontology extends BlockchainInterface {
      * @param{int} height is block height
      * @return {Promise} block timestamp
      */
-    getBlockGenerateTime(height){
-        return NetUtil.getBlock(height).then((block)=>{
+    getBlockGenerateTime(height) {
+        return NetUtil.getBlock(height).then((block) => {
             return block.Timestamp;
         });
     }
