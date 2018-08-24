@@ -115,27 +115,32 @@ class Blockchain {
 
     /**
      * send transaction
+     * @param {Object} context context object
      * @param {string} txHash transaction data
      * @param {string} txData transaction hash
      * @return {TxStatus}The txStatus for the transaction
      */
-    sendTx(txHash, txData) {
-        return this.bcObj.sendTx(txHash, txData);
+    sendTx(context, txHash, txData) {
+        return this.bcObj.sendTx(context, txHash, txData);
     }
 
     /**
      * send nothing, return a default tx status
+     * @param {Object} context context object
      * @param {string} txHash transaction hash.
      * @return {TxStatus} he txStatus for the transaction
      */
-    sendNon(txHash) {
+    sendNon(context, txHash) {
+        if (context.engine) {
+            context.engine.submitCallback(1);
+        }
         return Promise.resolve(new TxStatus(txHash));
     }
 
     /**
      * wait a block generate
      */
-    waitABlock(){
+    waitABlock() {
         this.bcObj.waitABlock();
     }
 

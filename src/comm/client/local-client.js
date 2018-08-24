@@ -160,7 +160,7 @@ async function insureTxs(notsureTxStatus) {
             addResult(notsureTxStatus[i]);
         }
     }
-    log('insure tx ended');
+    log('insure tx ended, faile tx num is', notsureTxStatus.length);
     return Promise.resolve();
 }
 
@@ -187,22 +187,23 @@ async function runFixedNumber(msg, cb, context) {
             if (blockchain.getType() === 'ontology') {
                 if (result.GetStatus() !== 'failed') { // tx has not been confirmed yet
                     // query tx state
-                    return blockchain.bcObj.insureTx(result.GetID()).then((isSuccess) => {
+                    return blockchain.insureTx(result.GetID()).then((isSuccess) => {
                         if (isSuccess) {
                             result.SetStatusSuccess();
                             addResult(result);
                         } else {
                             notSureTxs.push(result);
                         }
+                        return Promise.resolve();
                     });
                 } else {
                     addResult(result);
                     return Promise.resolve();
                 }
             }
+            return Promise.resolve();
         }));
         await rateControl.applyRateControl(startTime, txNum, results);
-        txNum++;
     }
 
     await Promise.all(promises);
@@ -233,6 +234,8 @@ async function runDuration(msg, cb, context) {
     rateControl.init(msg);
     const duration = msg.txDuration; // duration in seconds
 
+    msg.args.txNum = -1;
+
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();
     let notSureTxs = [];
@@ -243,16 +246,18 @@ async function runDuration(msg, cb, context) {
             if (blockchain.getType() === 'ontology') {
                 if (result.GetStatus() !== 'failed') { // tx has not been confirmed yet
                     // query tx state
-                    blockchain.bcObj.insureTx(result.GetID()).then((isSuccess) => {
+                    return blockchain.insureTx(result.GetID()).then((isSuccess) => {
                         if (isSuccess) {
                             result.SetStatusSuccess();
                             addResult(result);
                         } else {
                             notSureTxs.push(result);
                         }
+                        return Promise.resolve();
                     });
                 } else {
                     addResult(result);
+                    return Promise.resolve();
                 }
             }
             return Promise.resolve();
@@ -262,10 +267,12 @@ async function runDuration(msg, cb, context) {
 
     await Promise.all(promises);
     // wait all tx processed
+    log('all tx has been sended, notSureTxs length is ', notSureTxs.length);
     if (blockchain.getType() === 'ontology' && notSureTxs.length !== 0) {
         if (blockchain.bcObj.monitorOnly) {
             await blockchain.bcObj.waitTwoEmptyBlock();
         } else {
+            log('notSureTxs.length is', notSureTxs.length);
             await insureTxs(notSureTxs);
         }
     }

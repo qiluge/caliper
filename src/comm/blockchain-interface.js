@@ -82,10 +82,11 @@ class BlockchainInterface {
 
     /**
      * send transaction
+     * @param {Object} context context object
      * @param {string} txHash transaction data
      * @param {string} txData transaction hash
      */
-    sendTx(txHash, txData) {
+    sendTx(context, txHash, txData) {
         throw new Error('sendTx is not implemented for this blockchain system');
     }
 

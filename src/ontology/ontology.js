@@ -143,11 +143,15 @@ class Ontology extends BlockchainInterface {
 
     /**
      * send transaction
+     * @param {Object} context context object
      * @param {string} txHash transaction data
      * @param {string} txData transaction hash
      * @return {TxStatus}The txStatus for the transaction
      */
-    sendTx(txHash, txData) {
+    sendTx(context, txHash, txData) {
+        if (context.engine) {
+            context.engine.submitCallback(1);
+        }
         let invokeStatus = new TxStatus(txHash);
         return NetUtil.postTx(this.getRandomServerAddr(), txData).then((result) => {
             if (result < 0) {
