@@ -19,31 +19,39 @@ module.exports.init = async function (blockchain, context, args) {
     }
     invokeContract = args.invokeContract;
     bc = blockchain;
+    bc.bcObj.monitorOnly = !invokeContract;
     txIndex = -1;
     txNum = args.txNum;
     if (invokeContract && !args.hasOwnProperty('func')) {
         return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
     }
     log('start generate invoke tx');
+    let txPromise = [];
     if (invokeContract) {
         // read abi info
         let abiFileContent = fs.readFileSync(args.abi, 'utf-8');
         let abiInfo = ontSdk.AbiInfo.parseJson(abiFileContent);
         abiInfo.vmCode = fs.readFileSync(args.vmcode, 'utf-8');
         for (let i = 0; i < txNum; i++) {
-            let invokeArgs = {};
-            invokeArgs.func = args.func;
-            invokeArgs.args = args.args;
-            let tx = bc.bcObj.genInvokeSmartContractTx(abiInfo, args.version, invokeArgs);
-            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-            txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
-            txData.push(tx.serialize());
+            txPromise.push(new Promise((resolve, reject) => {
+                let invokeArgs = {};
+                invokeArgs.func = args.func;
+                invokeArgs.args = args.args;
+                let tx = bc.bcObj.genInvokeSmartContractTx(abiInfo, args.version, invokeArgs);
+                ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
+                txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
+                txData.push(tx.serialize());
+                resolve();
+            }));
         }
     } else {
         for (let i = 0; i < txNum; i++) {
-            // if the client only monitor, push a fake tx hash
-            // the fake hash is not queried in chain
-            txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
+            txPromise.push(new Promise((resolve, reject) => {
+                // if the client only monitor, push a fake tx hash
+                // the fake hash is not queried in chain
+                txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
+                resolve();
+            }));
         }
     }
     log('generate invoke tx down');

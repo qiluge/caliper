@@ -10,6 +10,9 @@
       "wallets/peer6/wallet.dat",
       "wallets/peer7/wallet.dat"
     ],
+    "server":[
+      "http://localhost:20334"
+    ],
     "wallet": "wallet.dat",
     "password": "passwordtest",
     "contract": [

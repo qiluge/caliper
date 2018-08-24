@@ -18,18 +18,18 @@
       {
         "label": "transferONG",
         "txNumber": [
-          500
+          10000
         ],
         "rateControl": [
           {
             "type": "fixed-rate",
             "opts": {
-              "tps": 250
+              "tps": 3000
             }
           }
         ],
         "arguments": {
-          "sendTx": false,
+          "sendTx": true,
           "sendToAddress": "AJUAvcs89o8b3vYQCaJuJ4TcVqYqJkV1Lw",
           "asset":"ONG"
         },

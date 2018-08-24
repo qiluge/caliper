@@ -129,7 +129,7 @@ async function insureTxs(notsureTxStatus) {
     let currentHeight = await blockchain.getHeight();
     log('insure tx current height is ', currentHeight);
     let emptyBlockNum = 0;
-    while (notsureTxStatus.length > 0 && emptyBlockNum <= 2) {
+    while (notsureTxStatus.length > 0 && emptyBlockNum < 2) {
         for (let i = 0; i < notsureTxStatus.length; i++) {
             if (await blockchain.insureTx(notsureTxStatus[i].GetID())) {
                 notsureTxStatus[i].SetStatusSuccess();
@@ -142,18 +142,14 @@ async function insureTxs(notsureTxStatus) {
             // end loop early
             break;
         }
+        await blockchain.waitABlock();
         let newHeight = await blockchain.getHeight();
         let txHashes = await blockchain.getBlockTxHashes(newHeight);
         if (typeof txHashes === 'undefined' || txHashes.length === 0) {
             emptyBlockNum++;
         }
-        if (newHeight === currentHeight) {
-            // chain height not increase
-            await Util.sleep(1000).then(() => {
-            });
-        }
+        log('insure tx, wait block, current height is', newHeight);
         currentHeight = newHeight;
-        log('insure tx current height is ', currentHeight);
     }
     log('insure tx current height is ', currentHeight);
     if (notsureTxStatus.length > 0) {
@@ -188,17 +184,21 @@ async function runFixedNumber(msg, cb, context) {
     let promises = [];
     while (txNum < msg.numb) {
         promises.push(cb.run().then((result) => {
-            if (result.GetStatus() !== 'failed' && blockchain.getType() === 'ontology') {// tx has not been confirmed yet
-                // query tx state
-                blockchain.bcObj.insureTx(result.GetID()).then((isSuccess) => {
-                    if (isSuccess) {
-                        result.SetStatusSuccess();
-                        addResult(result);
-                    } else {
-                        notSureTxs.push(result);
-                    }
+            if (blockchain.getType() === 'ontology') {
+                if (result.GetStatus() !== 'failed') { // tx has not been confirmed yet
+                    // query tx state
+                    return blockchain.bcObj.insureTx(result.GetID()).then((isSuccess) => {
+                        if (isSuccess) {
+                            result.SetStatusSuccess();
+                            addResult(result);
+                        } else {
+                            notSureTxs.push(result);
+                        }
+                    });
+                } else {
+                    addResult(result);
                     return Promise.resolve();
-                });
+                }
             }
         }));
         await rateControl.applyRateControl(startTime, txNum, results);
@@ -207,8 +207,14 @@ async function runFixedNumber(msg, cb, context) {
 
     await Promise.all(promises);
     // wait all tx processed
+    log('all tx has been sended, notSureTxs length is ', notSureTxs.length);
     if (blockchain.getType() === 'ontology' && notSureTxs.length !== 0) {
-        await insureTxs(notSureTxs);
+        if (blockchain.bcObj.monitorOnly) {
+            await blockchain.bcObj.waitTwoEmptyBlock();
+        } else {
+            log('notSureTxs.length is', notSureTxs.length);
+            await insureTxs(notSureTxs);
+        }
     }
     await rateControl.end();
     return await blockchain.releaseContext(context);
@@ -229,17 +235,40 @@ async function runDuration(msg, cb, context) {
 
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();
+    let notSureTxs = [];
 
     let promises = [];
     while ((Date.now() - startTime) / 1000 < duration) {
         promises.push(cb.run().then((result) => {
-            addResult(result);
+            if (blockchain.getType() === 'ontology') {
+                if (result.GetStatus() !== 'failed') { // tx has not been confirmed yet
+                    // query tx state
+                    blockchain.bcObj.insureTx(result.GetID()).then((isSuccess) => {
+                        if (isSuccess) {
+                            result.SetStatusSuccess();
+                            addResult(result);
+                        } else {
+                            notSureTxs.push(result);
+                        }
+                    });
+                } else {
+                    addResult(result);
+                }
+            }
             return Promise.resolve();
         }));
         await rateControl.applyRateControl(startTime, txNum, results);
     }
 
     await Promise.all(promises);
+    // wait all tx processed
+    if (blockchain.getType() === 'ontology' && notSureTxs.length !== 0) {
+        if (blockchain.bcObj.monitorOnly) {
+            await blockchain.bcObj.waitTwoEmptyBlock();
+        } else {
+            await insureTxs(notSureTxs);
+        }
+    }
     await rateControl.end();
     return await blockchain.releaseContext(context);
 }
@@ -326,7 +355,7 @@ process.on('message', function(message) {
             }
             }
         }
-        catch(err) {
+        catch (err) {
             process.send({type: 'error', data: err.toString()});
         }
     }

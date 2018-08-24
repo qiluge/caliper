@@ -21,6 +21,7 @@ class Ontology extends BlockchainInterface {
         let blockChainConfig = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
         this.contractConfig = blockChainConfig.ontology.contract;
         this.peerWallets = blockChainConfig.ontology.peers;
+        this.server = blockChainConfig.ontology.server;
         this.password = blockChainConfig.ontology.password; // peers and self password is same
         let walletFileContent = fs.readFileSync(blockChainConfig.ontology.wallet, 'utf-8');
         this.wallet = ontSdk.Wallet.parseJson(walletFileContent);
@@ -39,7 +40,7 @@ class Ontology extends BlockchainInterface {
         } catch (err) {
             throw Error('decrypt wallet failed');
         }
-        this.contractAbiInfo = new Map();
+        this.monitorOnly = true;
     }
 
     /**
@@ -51,9 +52,18 @@ class Ontology extends BlockchainInterface {
     }
 
     /**
+     * retrun a random server address, for request load balance
+     * @return {string} server address
+     */
+    getRandomServerAddr() {
+        let serverIndex = Math.floor(Math.random() * this.server.length);
+        return this.server[serverIndex];
+    }
+
+    /**
      * sendTx ont to a specific account
      */
-    async initOnt() {
+    async initAsset() {
         const pks = [];
         const pris = [];
         for (const peerWallet of this.peerWallets) {
@@ -68,30 +78,26 @@ class Ontology extends BlockchainInterface {
             };
             pris.push(p.decrypt(this.password, wallet.accounts[0].address, wallet.accounts[0].salt, params));
         }
-        let multiSignNum = Math.ceil((5 * this.peerWallets.length + 6) / 7);
+        let multiSignNum = Math.floor((5 * this.peerWallets.length + 6) / 7);
         const mulAddr = ontSdk.Crypto.Address.fromMultiPubKeys(multiSignNum, pks);
         log('mulAddr is ', mulAddr.toBase58());
-        const tx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 1000000000, '0',
-            '20000', mulAddr);
+        const transferOntTx = ontSdk.OntAssetTxBuilder.makeTransferTx('ONT', mulAddr, this.account.address, 1000000000,
+            '0', '20000', mulAddr);
+        const amount = 20000 * 1e9; // multiply 1e9 to set the precision
+        const transferOngTx = ontSdk.OntAssetTxBuilder.makeWithdrawOngTx(mulAddr, this.account.address, amount, mulAddr,
+            '0', '20000');
         for (let i = 0; i < multiSignNum; i++) {
-            ontSdk.TransactionBuilder.signTx(tx, multiSignNum, pks, pris[i]);
+            ontSdk.TransactionBuilder.signTx(transferOntTx, multiSignNum, pks, pris[i]);
+            ontSdk.TransactionBuilder.signTx(transferOngTx, multiSignNum, pks, pris[i]);
         }
-        NetUtil.postTx(tx.serialize());
+        NetUtil.postTx(this.getRandomServerAddr(), transferOntTx.serialize());
         await this.waitABlock();
-        log('balance is ', await NetUtil.getBalance(this.account.address.toBase58()));
-    }
-
-    /**
-     * withdraw ong on a specific account
-     */
-    async withdrawOng() {
-        const amount = 1e9; // multiply 1e9 to set the precision
-        let address = this.account.address;
-        const tx = ontSdk.OntAssetTxBuilder.makeWithdrawOngTx(address, address, amount, address, '0', '20000');
-        ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
-        NetUtil.postTx(tx.serialize());
+        log('after transfer ont, balance is ', await NetUtil.getBalance(this.getRandomServerAddr(),
+            this.account.address.toBase58()));
+        NetUtil.postTx(this.getRandomServerAddr(), transferOngTx.serialize());
         await this.waitABlock();
-        log('balance is ', await NetUtil.getBalance(this.account.address.toBase58()));
+        log('after transfer ong, balance is ', await NetUtil.getBalance(this.getRandomServerAddr(),
+            this.account.address.toBase58()));
     }
 
     /**
@@ -110,7 +116,7 @@ class Ontology extends BlockchainInterface {
             let tx = ontSdk.TransactionBuilder.makeDeployCodeTransaction(vmCode, name, codeVersion, author, email, desp,
                 needStorage, '0', '20000000', this.account.address);
             ontSdk.TransactionBuilder.signTransaction(tx, this.privateKey);
-            NetUtil.postTx(tx.serialize());
+            NetUtil.postTx(this.getRandomServerAddr(), tx.serialize());
         });
         await this.waitABlock();
         return Promise.resolve();
@@ -143,7 +149,7 @@ class Ontology extends BlockchainInterface {
      */
     sendTx(txHash, txData) {
         let invokeStatus = new TxStatus(txHash);
-        return NetUtil.postTx(txData).then((result) => {
+        return NetUtil.postTx(this.getRandomServerAddr(), txData).then((result) => {
             if (result < 0) {
                 invokeStatus.SetStatusFail();
                 log('tx failed', invokeStatus.GetID());
@@ -180,7 +186,7 @@ class Ontology extends BlockchainInterface {
      * @return {int} current height
      */
     getHeight() {
-        return NetUtil.getHeight();
+        return NetUtil.getHeight(this.getRandomServerAddr());
     }
 
     /**
@@ -189,7 +195,7 @@ class Ontology extends BlockchainInterface {
      * @return {string[]} all tx hashes in the block
      */
     getBlockTxHashes(height) {
-        return NetUtil.getBlockTxHashes(height);
+        return NetUtil.getBlockTxHashes(this.getRandomServerAddr(), height);
     }
 
     /**
@@ -198,7 +204,7 @@ class Ontology extends BlockchainInterface {
      * @return {Promise} tx is success or failed
      */
     insureTx(txHash) {
-        return NetUtil.insureTx(txHash);
+        return NetUtil.insureTx(this.getRandomServerAddr(), txHash);
     }
 
     /**
@@ -220,12 +226,32 @@ class Ontology extends BlockchainInterface {
     }
 
     /**
+     * wait two continuous empty block
+     */
+    async waitTwoEmptyBlock() {
+        let emptyBlockNum = 0;
+        while (emptyBlockNum < 2) {
+            await this.waitABlock();
+            let currentHeight = await this.getHeight();
+            let txHashes = await this.getBlockTxHashes(currentHeight);
+            let txNum = 0;
+            if (typeof txHashes === 'undefined' || txHashes.length === 0) {
+                emptyBlockNum++;
+            } else {
+                emptyBlockNum = 0;
+                txNum = txHashes.length;
+            }
+            log('wait two empty block, current height is', currentHeight, 'txs is ', txNum);
+        }
+    }
+
+    /**
      * get block generated time
      * @param{int} height is block height
      * @return {Promise} block timestamp
      */
     getBlockGenerateTime(height) {
-        return NetUtil.getBlock(height).then((block) => {
+        return NetUtil.getBlock(this.getRandomServerAddr(), height).then((block) => {
             return block.Header.Timestamp;
         });
     }

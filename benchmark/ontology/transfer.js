@@ -19,9 +19,9 @@ module.exports.init = async function (blockchain, context, args) {
     sendTx = args.sendTx;
     bc = blockchain;
     txIndex = -1;
+    bc.bcObj.monitorOnly = !sendTx;
     if (sendTx) {
-        await bc.bcObj.initOnt(bc.bcObj.account.address);
-        await bc.bcObj.withdrawOng(bc.bcObj.account.address);
+        await bc.bcObj.initAsset();
     }
     txNum = args.txNum;
     if (sendTx && !args.hasOwnProperty('sendToAddress')) {
@@ -31,21 +31,29 @@ module.exports.init = async function (blockchain, context, args) {
         args.asset = 'ONG';
     }
     log('start generate transfer tx');
+    let txPromise = [];
     if (sendTx) {
         for (let i = 0; i < txNum; i++) {
-            let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(args.asset, bc.bcObj.account.address,
-                new ontSdk.Crypto.Address(args.sendToAddress), 0.001 * 1e9, '0', '20000', bc.bcObj.account.address);
-            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-            txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
-            txData.push(tx.serialize());
+            txPromise.push(new Promise((resolve, reject) => {
+                let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(args.asset, bc.bcObj.account.address,
+                    new ontSdk.Crypto.Address(args.sendToAddress), 0.001 * 1e9, '0', '20000', bc.bcObj.account.address);
+                ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
+                txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
+                txData.push(tx.serialize());
+                resolve();
+            }));
         }
     } else {
         for (let i = 0; i < txNum; i++) {
-            // if the client only monitor, push a fake tx hash
-            // the fake hash is not queried in chain
-            txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
+            txPromise.push(new Promise((resolve, reject) => {
+                // if the client only monitor, push a fake tx hash
+                // the fake hash is not queried in chain
+                txHash.push('37e017cb9de93aa93ef817e82c555812a0a6d5c3f7d6c521c7808a5a77fc93c7');
+                resolve();
+            }));
         }
     }
+    await Promise.all(txPromise);
     log('generate transfer tx down');
     return Promise.resolve();
 };
