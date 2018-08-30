@@ -29,12 +29,12 @@ module.exports.init = async function (blockchain, context, args) {
     if (invokeContract && !args.hasOwnProperty('func')) {
         return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
     }
-    log('start generate invoke tx');
     let txPromise = [];
     txNum = args.txNum;
     if (txNum < 0) {
         isRunDuration = true;
     }
+    log('start generate transfer %d tx', txNum);
     if (invokeContract && !isRunDuration) {
         // read abi info
         let abiFileContent = fs.readFileSync(args.abi, 'utf-8');

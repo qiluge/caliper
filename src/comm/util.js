@@ -39,7 +39,7 @@ class Util {
      */
     static log(...msg) {
         // eslint-disable-next-line no-console
-        console.log(...msg);
+        console.log(...msg, 'client ', process.pid);
     }
 
     /**

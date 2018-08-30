@@ -40,12 +40,12 @@ module.exports.init = async function (blockchain, context, args) {
     if (asset === 'ONT') {
         amountPerTx = 1;
     }
-    log('start generate transfer tx');
     let txPromise = [];
     txNum = args.txNum;
     if (txNum < 0) {
         isRunDuration = true;
     }
+    log('start generate transfer %d tx', txNum);
     if (sendTx && !isRunDuration) {
         for (let i = 0; i < txNum; i++) {
             txPromise.push(new Promise((resolve, reject) => {

@@ -182,6 +182,7 @@ async function runFixedNumber(msg, cb, context) {
 
     let notSureTxs = [];
     let promises = [];
+    log('start send tx, current height is ', await blockchain.getHeight());
     while (txNum < msg.numb) {
         promises.push(cb.run().then((result) => {
             if (blockchain.getType() === 'ontology') {
