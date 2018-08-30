@@ -18,13 +18,13 @@
       {
         "label": "transferONG",
         "txNumber": [
-          10000
+          1000
         ],
         "rateControl": [
           {
             "type": "fixed-rate",
             "opts": {
-              "tps": 3000
+              "tps": 300
             }
           }
         ],

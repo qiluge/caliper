@@ -40,7 +40,7 @@ function demoInit() {
             round: 0,
         },
         report: ''
-    }
+    };
     for(let i = 0 ; i < demoXLen ; i++) {
         demoData.throughput.x.push(i * demoInterval);
         demoData.latency.x.push(i * demoInterval);

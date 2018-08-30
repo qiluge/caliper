@@ -40,7 +40,6 @@ module.exports.init = async function (blockchain, context, args) {
     if (asset === 'ONT') {
         amountPerTx = 1;
     }
-    let txPromise = [];
     txNum = args.txNum;
     if (txNum < 0) {
         isRunDuration = true;
@@ -48,26 +47,19 @@ module.exports.init = async function (blockchain, context, args) {
     log('start generate transfer %d tx', txNum);
     if (sendTx && !isRunDuration) {
         for (let i = 0; i < txNum; i++) {
-            txPromise.push(new Promise((resolve, reject) => {
-                let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(asset, bc.bcObj.account.address,
-                    new ontSdk.Crypto.Address(toAddress), amountPerTx, '0', '20000', bc.bcObj.account.address);
-                ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-                txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
-                txData.push(tx.serialize());
-                resolve();
-            }));
+            let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(asset, bc.bcObj.account.address,
+                new ontSdk.Crypto.Address(toAddress), amountPerTx, '0', '20000', bc.bcObj.account.address);
+            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
+            txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
+            txData.push(tx.serialize());
         }
     } else {
         for (let i = 0; i < txNum; i++) {
-            txPromise.push(new Promise((resolve, reject) => {
-                // if the client only monitor, push a fake tx hash
-                // the fake hash is not queried in chain
-                txHash.push('fbbc71163e20c95f7a33643b74f7e73fba68983caa95a71e6f929b1e686acb1e');
-                resolve();
-            }));
+            // if the client only monitor, push a fake tx hash
+            // the fake hash is not queried in chain
+            txHash.push('fbbc71163e20c95f7a33643b74f7e73fba68983caa95a71e6f929b1e686acb1e');
         }
     }
-    await Promise.all(txPromise);
     log('generate transfer tx down');
     return Promise.resolve();
 };
@@ -78,14 +70,10 @@ module.exports.run = function () {
     txIndex++;
     if (sendTx) {
         if (isRunDuration) {
-            return new Promise((resolve, reject) => {
-                let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(asset, bc.bcObj.account.address,
-                    new ontSdk.Crypto.Address(toAddress), amountPerTx, '0', '20000', bc.bcObj.account.address);
-                ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-                return resolve([ontSdk.utils.reverseHex(tx.getHash()), tx.serialize()]);
-            }).then((tx) => {
-                return bc.sendTx(cxt, tx[0], tx[1]);
-            });
+            let tx = ontSdk.OntAssetTxBuilder.makeTransferTx(asset, bc.bcObj.account.address,
+                new ontSdk.Crypto.Address(toAddress), amountPerTx, '0', '20000', bc.bcObj.account.address);
+            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
+            return bc.sendTx(cxt, ontSdk.utils.reverseHex(tx.getHash()), tx.serialize());
         } else {
             return bc.sendTx(cxt, txHash[txIndex], txData[txIndex]);
         }

@@ -122,10 +122,11 @@ class BlockchainInterface {
     }
 
     /**
-     * wait a block generate
+     * wait a block to catch up destHeight
+     * @param {int} destHeight start height
      */
-    waitABlock(){
-        this.bcObj.waitABlock();
+    waitABlock(destHeight){
+        throw new Error('waitABlock is not implemented for this blockchain system');
     }
 
     /**

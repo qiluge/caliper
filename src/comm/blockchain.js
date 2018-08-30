@@ -138,10 +138,12 @@ class Blockchain {
     }
 
     /**
-     * wait a block generate
+     * wait a block to catch up destHeight, if arg destHeight not defined, wait a block generate
+     * @param {int} destHeight start height
+     * @return {Promise} bcObj.waitABlock()
      */
-    waitABlock() {
-        this.bcObj.waitABlock();
+    async waitABlock(destHeight) {
+        return this.bcObj.waitABlock(destHeight);
     }
 
     /**

@@ -21,6 +21,7 @@ class NetUtil {
             'Data': txData
         }).then(function (response) {
             if (response.data.Error !== 0) {
+                log('postTx response:', response.data, 'args is', txData);
                 return -1;
             }
             return 1;
@@ -39,6 +40,7 @@ class NetUtil {
         return axios.get(server + '/api/v1/block/height')
             .then(function (response) {
                 if (response.data.Error !== 0) {
+                    log('getHeight response:', response.data, 'args is', server);
                     return 0;
                 }
                 return response.data.Result;
@@ -59,6 +61,7 @@ class NetUtil {
         return axios.get(server + '/api/v1/block/transactions/height/' + height)
             .then(function (response) {
                 if (response.data.Error !== 0) {
+                    log('getBlockTxHashes response:', response.data, 'args is', height);
                     return;
                 }
                 return response.data.Result.Transactions;
@@ -95,6 +98,7 @@ class NetUtil {
         return axios.get(server + '/api/v1/block/details/height/' + height)
             .then(function (response) {
                 if (response.data.Error !== 0) {
+                    log('getBlock response:', response.data, 'args is', height);
                     return -1;
                 }
                 return response.data.Result;
@@ -115,6 +119,7 @@ class NetUtil {
         return axios.get(server + '/api/v1/balance/' + addr)
             .then(function (response) {
                 if (response.data.Error !== 0) {
+                    log('getBalance response:', response.data, 'args is', addr);
                     return -1;
                 }
                 return response.data.Result;

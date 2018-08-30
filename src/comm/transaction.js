@@ -102,10 +102,10 @@ class TxStatus {
     }
 
     /**
-     * reduce failed tx final time
-     * @param{number} confirmTime should be last block that tx has been record
+     * set tx confirmed time
+     * @param{number} confirmTime is the generated time of block where is book-keep the tx
      */
-    SetFailTime(confirmTime) {
+    SetFinalTime(confirmTime) {
         this.status.time_final = confirmTime;
     }
 

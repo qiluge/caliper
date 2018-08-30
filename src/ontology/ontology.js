@@ -22,6 +22,7 @@ class Ontology extends BlockchainInterface {
         this.contractConfig = blockChainConfig.ontology.contract;
         this.peerWallets = blockChainConfig.ontology.peers;
         this.server = blockChainConfig.ontology.server;
+        this.querySever = this.getRandomServerAddr();
         this.password = blockChainConfig.ontology.password; // peers and self password is same
         let walletFileContent = fs.readFileSync(blockChainConfig.ontology.wallet, 'utf-8');
         this.wallet = ontSdk.Wallet.parseJson(walletFileContent);
@@ -190,7 +191,8 @@ class Ontology extends BlockchainInterface {
      * @return {int} current height
      */
     getHeight() {
-        return NetUtil.getHeight(this.getRandomServerAddr());
+        // in case of block height not sync problem, fix request server
+        return NetUtil.getHeight(this.querySever);
     }
 
     /**
@@ -199,7 +201,8 @@ class Ontology extends BlockchainInterface {
      * @return {string[]} all tx hashes in the block
      */
     getBlockTxHashes(height) {
-        return NetUtil.getBlockTxHashes(this.getRandomServerAddr(), height);
+        // in case of block height not sync problem, fix request server
+        return NetUtil.getBlockTxHashes(this.querySever, height);
     }
 
     /**
@@ -208,25 +211,32 @@ class Ontology extends BlockchainInterface {
      * @return {Promise} tx is success or failed
      */
     insureTx(txHash) {
-        return NetUtil.insureTx(this.getRandomServerAddr(), txHash);
+        // in case of block height not sync problem, fix request server
+        return NetUtil.insureTx(this.querySever, txHash);
     }
 
     /**
-     * wait a block generate
+     * wait a block to catch up destHeight
+     * @param {int} destHeight start height
+     * @return {Promise} empty promise
      */
-    async waitABlock() {
-        let currnetHeight = await this.getHeight();
-        let newHeight = currnetHeight;
-        do {
+    async waitABlock(destHeight) {
+        if (typeof destHeight === 'undefined') {
+            let curr = await this.getHeight();
+            console.log('dest height is', curr);
+            destHeight = curr + 1;
+        }
+        let newHeight;
+        while (true) {
             newHeight = await this.getHeight();
-            if (newHeight > currnetHeight) {
+            log('wait a block, current height is', newHeight, ', destHeight is', destHeight);
+            if (newHeight >= destHeight) {
                 break;
-            } else {
-                await Util.sleep(1000).then(() => {
-                });
-                log('wait a block, height is ', newHeight);
             }
-        } while (newHeight <= currnetHeight);
+            await Util.sleep(1000).then(() => {
+            });
+        }
+        return Promise.resolve();
     }
 
     /**
