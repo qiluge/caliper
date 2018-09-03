@@ -3,16 +3,13 @@
 module.exports.info = 'invoke contract';
 const Util = require('../../src/comm/util.js');
 const log = Util.log;
-const ontSdk = require('ontology-ts-sdk');
 const fs = require('fs');
+const readline = require('readline');
 
 let txNum, txIndex;
 let bc;
 let txHash = [], txData = [];
 let invokeContract = true; // false means that client monitor only
-let isRunDuration = false;
-let invokeArgs = {};
-let abiInfo = {};
 let cxt;
 
 
@@ -26,28 +23,23 @@ module.exports.init = async function (blockchain, context, args) {
     cxt = context;
     bc.bcObj.monitorOnly = !invokeContract;
     txIndex = -1;
-    if (invokeContract && !args.hasOwnProperty('func')) {
-        return Promise.reject(new Error('sendTx init - "contractName" or "func" is missed in the arguments'));
-    }
     txNum = args.txNum;
-    if (txNum < 0) {
-        isRunDuration = true;
-    }
-    // read abi info
-    let abiFileContent = fs.readFileSync(args.abi, 'utf-8');
-    abiInfo = ontSdk.AbiInfo.parseJson(abiFileContent);
-    abiInfo.vmCode = fs.readFileSync(args.vmcode, 'utf-8');
-    invokeArgs.func = args.func;
-    invokeArgs.args = args.args;
-    invokeArgs.version = args.version;
-    log('start generate transfer %d tx', txNum);
-    if (invokeContract && !isRunDuration) {
-        for (let i = 0; i < txNum; i++) {
-            let tx = bc.bcObj.genInvokeSmartContractTx(abiInfo, invokeArgs.version, invokeArgs);
-            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-            txHash.push(ontSdk.utils.reverseHex(tx.getHash()));
-            txData.push(tx.serialize());
-        }
+    log('start read invoke %d tx', txNum);
+    if (invokeContract) {
+        const read = readline.createInterface({
+            input: fs.createReadStream('./invoke.txt')
+        });
+        let i = 0;
+        let startIndex = txNum * args.clientIndex + 1;
+        let endIndex = txNum * (args.clientIndex + 1);
+        read.on('line', (line) => {
+            i += 1;
+            if (i >= startIndex && i <= endIndex) {
+                let lineContent = line.split(',');
+                txHash.push(lineContent[0]);
+                txData.push(lineContent[1]);
+            }
+        });
     } else {
         for (let i = 0; i < txNum; i++) {
             // if the client only monitor, push a fake tx hash
@@ -55,7 +47,7 @@ module.exports.init = async function (blockchain, context, args) {
             txHash.push('fbbc71163e20c95f7a33643b74f7e73fba68983caa95a71e6f929b1e686acb1e');
         }
     }
-    log('generate invoke tx down');
+    log('read invoke tx down');
     return Promise.resolve();
 };
 
@@ -64,13 +56,7 @@ module.exports.init = async function (blockchain, context, args) {
 module.exports.run = function () {
     txIndex++;
     if (invokeContract) {
-        if (isRunDuration) {
-            let tx = bc.bcObj.genInvokeSmartContractTx(abiInfo, invokeArgs.version, invokeArgs);
-            ontSdk.TransactionBuilder.signTransaction(tx, bc.bcObj.privateKey);
-            return bc.sendTx(cxt, ontSdk.utils.reverseHex(tx.getHash()), tx.serialize());
-        } else {
-            return bc.sendTx(cxt, txHash[txIndex], txData[txIndex]);
-        }
+        return bc.sendTx(cxt, txHash[txIndex], txData[txIndex]);
     } else {
         return bc.sendNon(cxt, txHash[txIndex]);
     }

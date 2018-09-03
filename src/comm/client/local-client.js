@@ -209,6 +209,7 @@ async function runFixedNumber(msg, cb, context) {
     forceUpdateTxNum = forceUpdateTxNum < tps ? forceUpdateTxNum : tps;
 
     msg.args.txNum = msg.numb;
+    msg.args.clientIndex = msg.clientIdx;
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();
 
@@ -265,7 +266,7 @@ async function runDuration(msg, cb, context) {
     const tps = rateControl.controller.options.tps;
     log('duration is %d, tps is %d', duration, tps / msg.totalClients);
     forceUpdateTxNum = forceUpdateTxNum < tps ? forceUpdateTxNum : tps;
-    msg.args.txNum = -1;
+    msg.args.txNum = duration * (tps / msg.totalClients);
 
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();

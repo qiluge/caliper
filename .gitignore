@@ -29,9 +29,10 @@ zookeeper.out
 .vscode/*
 
 transfer.txt
+invoke.txt
 ontology
 !*/ontology/
-wallet.dat
+wallet*.dat
 nohup.out
 Chain/
 Log/

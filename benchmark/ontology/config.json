@@ -29,9 +29,7 @@
           }
         ],
         "arguments": {
-          "sendTx": true,
-          "sendToAddress": "AJUAvcs89o8b3vYQCaJuJ4TcVqYqJkV1Lw",
-          "asset":"ONG"
+          "sendTx": true
         },
         "callback": "benchmark/ontology/transfer.js"
       },
@@ -49,14 +47,7 @@
           }
         ],
         "arguments": {
-          "invokeContract": true,
-          "abi": "benchmark/ontology/hello.abi",
-          "vmcode": "benchmark/ontology/hello.avm",
-          "version": "1.0.0",
-          "func": "Hello",
-          "args": [
-            "ontology"
-          ]
+          "invokeContract": true
         },
         "callback": "benchmark/ontology/invoke.js"
       }
