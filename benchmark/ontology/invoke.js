@@ -40,6 +40,11 @@ module.exports.init = async function (blockchain, context, args) {
                 txData.push(lineContent[1]);
             }
         });
+        while (txData.length < txNum) {
+            await Util.sleep(1000).then(() => {
+            });
+        }
+        read.close();
     } else {
         for (let i = 0; i < txNum; i++) {
             // if the client only monitor, push a fake tx hash
@@ -47,7 +52,7 @@ module.exports.init = async function (blockchain, context, args) {
             txHash.push('fbbc71163e20c95f7a33643b74f7e73fba68983caa95a71e6f929b1e686acb1e');
         }
     }
-    log('read invoke tx down');
+    log('read invoke tx %d down', txData.length);
     return Promise.resolve();
 };
 

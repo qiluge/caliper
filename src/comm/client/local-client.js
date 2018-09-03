@@ -267,6 +267,7 @@ async function runDuration(msg, cb, context) {
     log('duration is %d, tps is %d', duration, tps / msg.totalClients);
     forceUpdateTxNum = forceUpdateTxNum < tps ? forceUpdateTxNum : tps;
     msg.args.txNum = duration * (tps / msg.totalClients);
+    msg.args.clientIndex = msg.clientIdx;
 
     await cb.init(blockchain, context, msg.args);
     startTime = Date.now();
