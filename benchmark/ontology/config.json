@@ -31,25 +31,7 @@
         "arguments": {
           "sendTx": true
         },
-        "callback": "benchmark/ontology/transfer.js"
-      },
-      {
-        "label": "invokeContract",
-        "txNumber": [
-          10000
-        ],
-        "rateControl": [
-          {
-            "type": "fixed-rate",
-            "opts": {
-              "tps": 2500
-            }
-          }
-        ],
-        "arguments": {
-          "invokeContract": true
-        },
-        "callback": "benchmark/ontology/invoke.js"
+        "callback": "benchmark/ontology/transfer-gen-tx.js"
       }
     ]
   },
